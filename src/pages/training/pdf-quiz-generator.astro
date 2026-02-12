@@ -49,7 +49,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <section class="sim-panel" id="quiz-score-panel" hidden>
       <h2>3. Results</h2>
       <p id="quiz-score-summary" class="quiz-score"></p>
-      <button type="button" id="quiz-restart-btn">Restart</button>
+      <button type="button" id="quiz-restart-btn">Create Another Quiz</button>
     </section>
   </section>
 
@@ -79,6 +79,12 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       score: 0,
       answered: false,
     };
+
+    function showStage(stage) {
+      configForm.hidden = stage !== "config";
+      quizPanel.hidden = stage !== "quiz";
+      scorePanel.hidden = stage !== "score";
+    }
 
     function setBusy(button, busy, text) {
       button.disabled = busy;
@@ -167,8 +173,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     }
 
     function showResults() {
-      quizPanel.hidden = true;
-      scorePanel.hidden = false;
+      showStage("score");
       const total = state.questions.length;
       const percent = Math.round((state.score / total) * 100);
       scoreSummary.textContent = `You scored ${state.score}/${total} (${percent}%).`;
@@ -223,7 +228,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     configForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
       setBusy(generateBtn, true, "Generating...");
-      scorePanel.hidden = true;
+      showStage("config");
 
       try {
         const questionCount = Number(questionCountInput.value);
@@ -246,7 +251,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         state.index = 0;
         state.score = 0;
 
-        quizPanel.hidden = false;
+        showStage("quiz");
         renderQuestion();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to generate quiz.";
@@ -268,11 +273,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     restartBtn?.addEventListener("click", () => {
       state.index = 0;
       state.score = 0;
-      scorePanel.hidden = true;
-      quizPanel.hidden = true;
+      state.questions = [];
+      state.answered = false;
+      showStage("config");
       feedbackEl.hidden = true;
       optionsEl.innerHTML = "";
     });
+
+    showStage("config");
   </script>
 </BaseLayout>
-
