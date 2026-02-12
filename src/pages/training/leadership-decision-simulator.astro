@@ -1,0 +1,196 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Leadership Decision Simulator | AZVAI Training"
+  description="Interactive leadership scenario simulator powered by Lumination API."
+  current="training"
+>
+  <section class="hero">
+    <p class="eyebrow">training experiment</p>
+    <h1>Leadership Decision Simulator</h1>
+    <p class="lead">
+      Practice manager decisions in realistic workplace scenarios. Generate one situation, choose a response, and get an
+      AI coaching debrief.
+    </p>
+  </section>
+
+  <section class="simulator" aria-label="Leadership decision simulator">
+    <form id="sim-config" class="sim-panel">
+      <h2>1. Configure Scenario</h2>
+
+      <label for="role">Manager Role</label>
+      <input id="role" name="role" value="Team Lead" required />
+
+      <label for="challenge">Challenge Type</label>
+      <select id="challenge" name="challenge" required>
+        <option value="performance-feedback">Performance feedback</option>
+        <option value="conflict-resolution">Conflict resolution</option>
+        <option value="delegation-pressure">Delegation under pressure</option>
+        <option value="change-management">Change management</option>
+      </select>
+
+      <label for="difficulty">Difficulty</label>
+      <select id="difficulty" name="difficulty" required>
+        <option value="easy">Easy</option>
+        <option value="intermediate" selected>Intermediate</option>
+        <option value="advanced">Advanced</option>
+      </select>
+
+      <button type="submit" id="generate-btn">Generate Scenario</button>
+    </form>
+
+    <section class="sim-panel" id="scenario-panel" hidden>
+      <h2>2. Scenario</h2>
+      <p id="scenario-text"></p>
+      <div id="options-list" class="option-list"></div>
+    </section>
+
+    <form id="decision-form" class="sim-panel" hidden>
+      <h2>3. Your Decision</h2>
+      <label for="selected-option">Selected Option</label>
+      <input id="selected-option" name="selectedOption" readonly required />
+
+      <label for="rationale">Your Rationale</label>
+      <textarea id="rationale" name="rationale" rows="5" placeholder="Explain why you chose this option..." required></textarea>
+
+      <button type="submit" id="evaluate-btn">Get Coaching Debrief</button>
+    </form>
+
+    <section class="sim-panel" id="debrief-panel" hidden>
+      <h2>4. Debrief</h2>
+      <div id="debrief-output" class="debrief-output"></div>
+    </section>
+  </section>
+
+  <script>
+    const state = {
+      config: null,
+      scenario: null,
+      options: [],
+    };
+
+    const configForm = document.getElementById("sim-config");
+    const decisionForm = document.getElementById("decision-form");
+    const scenarioPanel = document.getElementById("scenario-panel");
+    const debriefPanel = document.getElementById("debrief-panel");
+    const scenarioText = document.getElementById("scenario-text");
+    const optionsList = document.getElementById("options-list");
+    const selectedOptionInput = document.getElementById("selected-option");
+    const debriefOutput = document.getElementById("debrief-output");
+    const generateBtn = document.getElementById("generate-btn");
+    const evaluateBtn = document.getElementById("evaluate-btn");
+
+    function renderOptions(options) {
+      optionsList.innerHTML = "";
+      options.forEach((option, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "option-button";
+        button.textContent = `${index + 1}. ${option}`;
+        button.addEventListener("click", () => {
+          selectedOptionInput.value = option;
+          document.querySelectorAll(".option-button").forEach((node) => node.classList.remove("selected"));
+          button.classList.add("selected");
+          decisionForm.hidden = false;
+        });
+        optionsList.appendChild(button);
+      });
+    }
+
+    function setBusy(button, busy, text) {
+      button.disabled = busy;
+      button.textContent = busy ? text : button.dataset.defaultText;
+    }
+
+    async function postSimulator(payload) {
+      const res = await fetch("/api/training/leadership-decision-simulator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Request failed");
+      }
+      return data.result;
+    }
+
+    generateBtn.dataset.defaultText = generateBtn.textContent;
+    evaluateBtn.dataset.defaultText = evaluateBtn.textContent;
+
+    configForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setBusy(generateBtn, true, "Generating...");
+      debriefPanel.hidden = true;
+
+      try {
+        const formData = new FormData(configForm);
+        state.config = {
+          role: String(formData.get("role") || "").trim(),
+          challenge: String(formData.get("challenge") || "").trim(),
+          difficulty: String(formData.get("difficulty") || "").trim(),
+        };
+
+        const result = await postSimulator({
+          mode: "generate",
+          ...state.config,
+        });
+
+        state.scenario = String(result.scenario || "");
+        state.options = Array.isArray(result.options) ? result.options.map((item) => String(item)) : [];
+
+        scenarioText.textContent = state.scenario || "No scenario returned.";
+        renderOptions(state.options);
+        scenarioPanel.hidden = false;
+        decisionForm.hidden = true;
+        selectedOptionInput.value = "";
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to generate scenario.";
+        scenarioText.textContent = message;
+        scenarioPanel.hidden = false;
+        optionsList.innerHTML = "";
+      } finally {
+        setBusy(generateBtn, false);
+      }
+    });
+
+    decisionForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setBusy(evaluateBtn, true, "Evaluating...");
+      debriefPanel.hidden = true;
+
+      try {
+        const formData = new FormData(decisionForm);
+        const rationale = String(formData.get("rationale") || "").trim();
+        const selectedOption = String(formData.get("selectedOption") || "").trim();
+
+        const result = await postSimulator({
+          mode: "evaluate",
+          ...state.config,
+          scenario: state.scenario,
+          options: state.options,
+          selectedOption,
+          rationale,
+        });
+
+        debriefOutput.innerHTML = `
+          <p><strong>Score:</strong> ${result.score ?? "N/A"}</p>
+          <p><strong>Verdict:</strong> ${result.verdict ?? "N/A"}</p>
+          <p><strong>Blind Spot:</strong> ${result.blind_spot ?? "N/A"}</p>
+          <p><strong>What Worked:</strong> ${result.what_worked ?? "N/A"}</p>
+          <p><strong>What To Improve:</strong> ${result.what_to_improve ?? "N/A"}</p>
+          <p><strong>Next Action:</strong> ${result.next_action ?? "N/A"}</p>
+        `;
+        debriefPanel.hidden = false;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to evaluate.";
+        debriefOutput.innerHTML = `<p>${message}</p>`;
+        debriefPanel.hidden = false;
+      } finally {
+        setBusy(evaluateBtn, false);
+      }
+    });
+  </script>
+</BaseLayout>

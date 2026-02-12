@@ -397,3 +397,85 @@ footer .footer-brand img {
     text-align: center;
   }
 }
+
+/* Simulator */
+
+.simulator {
+  display: grid;
+  gap: 1rem;
+}
+
+.sim-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 0.7rem;
+}
+
+.sim-panel h2 {
+  font-size: 1.1rem;
+}
+
+.sim-panel label {
+  font-size: 0.87rem;
+  color: var(--text-secondary);
+}
+
+.sim-panel input,
+.sim-panel select,
+.sim-panel textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.72rem 0.85rem;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+}
+
+.sim-panel textarea {
+  resize: vertical;
+}
+
+.sim-panel button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #1a1a1a;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sim-panel button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.option-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.option-button {
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  padding: 0.7rem 0.85rem;
+  color: var(--text);
+}
+
+.option-button.selected {
+  border-color: var(--brand-deep);
+  background: var(--brand);
+}
+
+.debrief-output p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
