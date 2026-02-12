@@ -1,0 +1,278 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="PDF Quiz Generator | AZVAI Training"
+  description="Generate an interactive quiz from a PDF using Lumination API."
+  current="training"
+>
+  <section class="hero">
+    <p class="eyebrow">training experiment</p>
+    <h1>PDF Quiz Generator</h1>
+    <p class="lead">
+      Upload a PDF, choose how many questions you want, and run an interactive multiple-choice quiz with instant
+      feedback and final score.
+    </p>
+  </section>
+
+  <section class="simulator" aria-label="PDF quiz generator">
+    <form id="quiz-config" class="sim-panel">
+      <h2>1. Upload and Configure</h2>
+
+      <label for="source-file">Upload source PDF</label>
+      <input id="source-file" name="sourceFile" type="file" accept=".pdf,application/pdf" required />
+
+      <label for="question-count">Number of questions (1-20)</label>
+      <input id="question-count" name="questionCount" type="number" min="1" max="20" value="5" required />
+
+      <label for="difficulty">Difficulty</label>
+      <select id="difficulty" name="difficulty">
+        <option value="easy">Easy</option>
+        <option value="intermediate" selected>Intermediate</option>
+        <option value="advanced">Advanced</option>
+      </select>
+
+      <p class="sim-note" id="quiz-meta">No PDF loaded.</p>
+      <button type="submit" id="quiz-generate-btn">Generate Quiz</button>
+    </form>
+
+    <section class="sim-panel" id="quiz-panel" hidden>
+      <h2>2. Quiz</h2>
+      <p class="sim-note"><span id="quiz-progress"></span></p>
+      <p id="quiz-question" class="quiz-question"></p>
+      <div id="quiz-options" class="option-list"></div>
+      <div id="quiz-feedback" class="quiz-feedback" hidden></div>
+      <button type="button" id="quiz-next-btn" hidden>Next Question</button>
+    </section>
+
+    <section class="sim-panel" id="quiz-score-panel" hidden>
+      <h2>3. Results</h2>
+      <p id="quiz-score-summary" class="quiz-score"></p>
+      <button type="button" id="quiz-restart-btn">Restart</button>
+    </section>
+  </section>
+
+  <script>
+    const configForm = document.getElementById("quiz-config");
+    const sourceFileInput = document.getElementById("source-file");
+    const questionCountInput = document.getElementById("question-count");
+    const quizMeta = document.getElementById("quiz-meta");
+    const generateBtn = document.getElementById("quiz-generate-btn");
+
+    const quizPanel = document.getElementById("quiz-panel");
+    const progressEl = document.getElementById("quiz-progress");
+    const questionEl = document.getElementById("quiz-question");
+    const optionsEl = document.getElementById("quiz-options");
+    const feedbackEl = document.getElementById("quiz-feedback");
+    const nextBtn = document.getElementById("quiz-next-btn");
+
+    const scorePanel = document.getElementById("quiz-score-panel");
+    const scoreSummary = document.getElementById("quiz-score-summary");
+    const restartBtn = document.getElementById("quiz-restart-btn");
+
+    const state = {
+      sourceText: "",
+      title: "",
+      questions: [],
+      index: 0,
+      score: 0,
+      answered: false,
+    };
+
+    function setBusy(button, busy, text) {
+      button.disabled = busy;
+      button.textContent = busy ? text : button.dataset.defaultText;
+    }
+
+    async function parseJsonSafe(response) {
+      const raw = await response.text();
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    async function extractPdfText(file) {
+      const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";
+
+      const buffer = await file.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: buffer }).promise;
+      const chunks = [];
+
+      for (let pageIndex = 1; pageIndex <= Math.min(pdf.numPages, 35); pageIndex += 1) {
+        const page = await pdf.getPage(pageIndex);
+        const text = await page.getTextContent();
+        const line = text.items
+          .map((item) => ("str" in item ? item.str : ""))
+          .filter(Boolean)
+          .join(" ");
+        chunks.push(line);
+        if (chunks.join("\n").length > 30000) break;
+      }
+
+      return chunks.join("\n\n").trim();
+    }
+
+    function renderQuestion() {
+      const current = state.questions[state.index];
+      if (!current) return;
+
+      state.answered = false;
+      progressEl.textContent = `Question ${state.index + 1} of ${state.questions.length}`;
+      questionEl.textContent = current.question || "No question text.";
+      optionsEl.innerHTML = "";
+      feedbackEl.hidden = true;
+      feedbackEl.className = "quiz-feedback";
+      feedbackEl.textContent = "";
+      nextBtn.hidden = true;
+
+      current.choices.forEach((choice, idx) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "option-button";
+        button.textContent = `${idx + 1}. ${choice}`;
+        button.addEventListener("click", () => onSelectAnswer(idx, button));
+        optionsEl.appendChild(button);
+      });
+    }
+
+    function onSelectAnswer(selectedIndex, selectedButton) {
+      if (state.answered) return;
+      state.answered = true;
+
+      const current = state.questions[state.index];
+      const isCorrect = selectedIndex === current.correctIndex;
+      if (isCorrect) state.score += 1;
+
+      const optionButtons = optionsEl.querySelectorAll(".option-button");
+      optionButtons.forEach((button, idx) => {
+        button.disabled = true;
+        if (idx === current.correctIndex) button.classList.add("correct");
+      });
+
+      if (!isCorrect) selectedButton.classList.add("wrong");
+
+      feedbackEl.hidden = false;
+      feedbackEl.classList.add(isCorrect ? "correct" : "wrong");
+      feedbackEl.innerHTML = isCorrect
+        ? `<strong>Correct.</strong> ${current.explanation || ""}`
+        : `<strong>Incorrect.</strong> ${current.explanation || ""}`;
+
+      nextBtn.hidden = false;
+      nextBtn.textContent = state.index < state.questions.length - 1 ? "Next Question" : "See Results";
+    }
+
+    function showResults() {
+      quizPanel.hidden = true;
+      scorePanel.hidden = false;
+      const total = state.questions.length;
+      const percent = Math.round((state.score / total) * 100);
+      scoreSummary.textContent = `You scored ${state.score}/${total} (${percent}%).`;
+    }
+
+    async function generateQuiz(payload) {
+      const res = await fetch("/api/training/pdf-quiz-generator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await parseJsonSafe(res);
+      if (!res.ok) {
+        const message = data?.error || `Request failed (${res.status}). Check Netlify env vars and redeploy.`;
+        throw new Error(message);
+      }
+
+      if (!data?.result?.questions?.length) {
+        throw new Error("Quiz generation returned no questions.");
+      }
+
+      return data.result;
+    }
+
+    generateBtn.dataset.defaultText = generateBtn.textContent;
+
+    sourceFileInput?.addEventListener("change", async () => {
+      const file = sourceFileInput.files?.[0];
+      if (!file) {
+        state.sourceText = "";
+        quizMeta.textContent = "No PDF loaded.";
+        return;
+      }
+
+      try {
+        quizMeta.textContent = "Reading PDF...";
+        const text = await extractPdfText(file);
+        if (!text) {
+          state.sourceText = "";
+          quizMeta.textContent = "PDF has no extractable text (likely scanned).";
+          return;
+        }
+        state.sourceText = text;
+        quizMeta.textContent = `Loaded "${file.name}" (${text.length} chars).`;
+      } catch {
+        state.sourceText = "";
+        quizMeta.textContent = "Could not read PDF.";
+      }
+    });
+
+    configForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setBusy(generateBtn, true, "Generating...");
+      scorePanel.hidden = true;
+
+      try {
+        const questionCount = Number(questionCountInput.value);
+        if (!state.sourceText) throw new Error("Upload a valid PDF with extractable text first.");
+        if (!Number.isFinite(questionCount) || questionCount < 1 || questionCount > 20) {
+          throw new Error("Question count must be between 1 and 20.");
+        }
+
+        const formData = new FormData(configForm);
+        const difficulty = String(formData.get("difficulty") || "intermediate");
+
+        const result = await generateQuiz({
+          sourceText: state.sourceText,
+          questionCount,
+          difficulty,
+        });
+
+        state.title = String(result.title || "Document Quiz");
+        state.questions = result.questions;
+        state.index = 0;
+        state.score = 0;
+
+        quizPanel.hidden = false;
+        renderQuestion();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to generate quiz.";
+        quizMeta.textContent = message;
+      } finally {
+        setBusy(generateBtn, false);
+      }
+    });
+
+    nextBtn?.addEventListener("click", () => {
+      if (state.index < state.questions.length - 1) {
+        state.index += 1;
+        renderQuestion();
+        return;
+      }
+      showResults();
+    });
+
+    restartBtn?.addEventListener("click", () => {
+      state.index = 0;
+      state.score = 0;
+      scorePanel.hidden = true;
+      quizPanel.hidden = true;
+      feedbackEl.hidden = true;
+      optionsEl.innerHTML = "";
+    });
+  </script>
+</BaseLayout>
+
