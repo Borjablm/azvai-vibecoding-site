@@ -20,10 +20,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <section class="sim-panel">
       <h2>0. Add Policy Context (Optional)</h2>
       <p class="sim-note">
-        Upload a text policy file (`.txt`, `.md`, `.csv`) or paste key policy/governance rules. Scenarios and debriefs will align to it.
+        Upload a policy file (`.txt`, `.md`, `.csv`, `.pdf`) or paste key policy/governance rules. Scenarios and debriefs will align to it.
       </p>
       <label for="policy-file">Upload policy file</label>
-      <input id="policy-file" name="policyFile" type="file" accept=".txt,.md,.csv,text/plain,text/markdown,text/csv" />
+      <input id="policy-file" name="policyFile" type="file" accept=".txt,.md,.csv,.pdf,text/plain,text/markdown,text/csv,application/pdf" />
 
       <label for="policy-context">Or paste policy context</label>
       <textarea
@@ -105,6 +105,31 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     function getPolicyContext() {
       return String(policyContext?.value || "").trim();
+    }
+
+    async function extractPdfText(file) {
+      const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";
+
+      const buffer = await file.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: buffer }).promise;
+      const chunks = [];
+
+      for (let pageIndex = 1; pageIndex <= Math.min(pdf.numPages, 20); pageIndex += 1) {
+        const page = await pdf.getPage(pageIndex);
+        const text = await page.getTextContent();
+        const line = text.items
+          .map((item) => ("str" in item ? item.str : ""))
+          .filter(Boolean)
+          .join(" ");
+        chunks.push(line);
+
+        if (chunks.join("\n").length > 20000) {
+          break;
+        }
+      }
+
+      return chunks.join("\n\n").trim();
     }
 
     function renderOptions(options) {
@@ -250,10 +275,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       }
 
       try {
-        const text = await file.text();
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        const text = isPdf ? await extractPdfText(file) : await file.text();
         const cleaned = text.trim();
         if (!cleaned) {
-          policyMeta.textContent = "Uploaded file is empty.";
+          policyMeta.textContent = isPdf
+            ? "PDF has no extractable text. If it is scanned, paste policy text manually."
+            : "Uploaded file is empty.";
           return;
         }
 
