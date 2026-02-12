@@ -8,6 +8,7 @@ interface GeneratePayload {
   role: string;
   challenge: string;
   difficulty: string;
+  policyContext?: string;
 }
 
 interface EvaluatePayload {
@@ -19,6 +20,7 @@ interface EvaluatePayload {
   options: string[];
   selectedOption: string;
   rationale: string;
+  policyContext?: string;
 }
 
 function getApiConfig() {
@@ -166,6 +168,7 @@ function parseEvaluateFallback(raw: string): Record<string, unknown> {
 }
 
 function buildGeneratePrompt(data: GeneratePayload) {
+  const policyContext = safeText(data.policyContext);
   return [
     "You are a leadership simulation designer.",
     "Return strict JSON only with keys:",
@@ -177,12 +180,16 @@ function buildGeneratePrompt(data: GeneratePayload) {
     `Role: ${data.role}`,
     `Challenge type: ${data.challenge}`,
     `Difficulty: ${data.difficulty}`,
+    policyContext
+      ? `Policy context (must guide scenario and best option):\n${policyContext}`
+      : "No policy context provided. Use general management best practices.",
     "Create one realistic corporate training scenario for a first-line manager.",
     "The options must be plausible trade-offs, not obvious right/wrong."
   ].join("\n");
 }
 
 function buildEvaluatePrompt(data: EvaluatePayload) {
+  const policyContext = safeText(data.policyContext);
   return [
     "You are a leadership coach evaluating a manager decision.",
     "Return strict JSON only with keys:",
@@ -196,7 +203,10 @@ function buildEvaluatePrompt(data: EvaluatePayload) {
     `Scenario: ${data.scenario}`,
     `Options: ${data.options.join(" | ")}`,
     `Selected option: ${data.selectedOption}`,
-    `Rationale: ${data.rationale}`
+    `Rationale: ${data.rationale}`,
+    policyContext
+      ? `Evaluate against this policy context:\n${policyContext}`
+      : "Evaluate against general manager best practices."
   ].join("\n");
 }
 

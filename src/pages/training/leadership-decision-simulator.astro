@@ -17,6 +17,24 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   </section>
 
   <section class="simulator" aria-label="Leadership decision simulator">
+    <section class="sim-panel">
+      <h2>0. Add Policy Context (Optional)</h2>
+      <p class="sim-note">
+        Upload a text policy file (`.txt`, `.md`, `.csv`) or paste key policy/governance rules. Scenarios and debriefs will align to it.
+      </p>
+      <label for="policy-file">Upload policy file</label>
+      <input id="policy-file" name="policyFile" type="file" accept=".txt,.md,.csv,text/plain,text/markdown,text/csv" />
+
+      <label for="policy-context">Or paste policy context</label>
+      <textarea
+        id="policy-context"
+        name="policyContext"
+        rows="8"
+        placeholder="Example: Managers must document corrective feedback within 48 hours and agree measurable milestones within 2 weeks..."
+      ></textarea>
+      <p class="sim-note" id="policy-meta">No policy context loaded.</p>
+    </section>
+
     <form id="sim-config" class="sim-panel">
       <h2>1. Configure Scenario</h2>
 
@@ -81,6 +99,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     const debriefOutput = document.getElementById("debrief-output");
     const generateBtn = document.getElementById("generate-btn");
     const evaluateBtn = document.getElementById("evaluate-btn");
+    const policyFile = document.getElementById("policy-file");
+    const policyContext = document.getElementById("policy-context");
+    const policyMeta = document.getElementById("policy-meta");
+
+    function getPolicyContext() {
+      return String(policyContext?.value || "").trim();
+    }
 
     function renderOptions(options) {
       optionsList.innerHTML = "";
@@ -158,6 +183,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         const result = await postSimulator({
           mode: "generate",
           ...state.config,
+          policyContext: getPolicyContext(),
         });
 
         state.scenario = String(result.scenario || "");
@@ -195,6 +221,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           options: state.options,
           selectedOption,
           rationale,
+          policyContext: getPolicyContext(),
         });
 
         debriefOutput.innerHTML = `
@@ -213,6 +240,34 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       } finally {
         setBusy(evaluateBtn, false);
       }
+    });
+
+    policyFile?.addEventListener("change", async () => {
+      const file = policyFile.files?.[0];
+      if (!file) {
+        policyMeta.textContent = "No policy context loaded.";
+        return;
+      }
+
+      try {
+        const text = await file.text();
+        const cleaned = text.trim();
+        if (!cleaned) {
+          policyMeta.textContent = "Uploaded file is empty.";
+          return;
+        }
+
+        policyContext.value = cleaned.slice(0, 12000);
+        const charCount = policyContext.value.length;
+        policyMeta.textContent = `Loaded "${file.name}" (${charCount} chars).`;
+      } catch {
+        policyMeta.textContent = "Could not read file. Use .txt/.md/.csv or paste content manually.";
+      }
+    });
+
+    policyContext?.addEventListener("input", () => {
+      const charCount = getPolicyContext().length;
+      policyMeta.textContent = charCount > 0 ? `Policy context ready (${charCount} chars).` : "No policy context loaded.";
     });
   </script>
 </BaseLayout>

@@ -419,6 +419,13 @@ footer .footer-brand img {
   font-size: 1.1rem;
 }
 
+.sim-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
 .sim-panel label {
   font-size: 0.87rem;
   color: var(--text-secondary);
