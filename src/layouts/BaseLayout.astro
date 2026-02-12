@@ -7,9 +7,21 @@ interface Props {
   title: string;
   description?: string;
   current?: "home" | "projects" | "training";
+  noindex?: boolean;
+  ogType?: "website" | "article";
 }
 
-const { title, description = "Vibecoding portfolio and AI playground.", current = "home" } = Astro.props;
+const {
+  title,
+  description = "Vibecoding portfolio and AI playground.",
+  current = "home",
+  noindex = false,
+  ogType = "website",
+} = Astro.props;
+
+const siteUrl = Astro.site ?? new URL("https://ai.azvai.com");
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
+const robotsContent = noindex ? "noindex, nofollow" : "index, follow";
 ---
 
 <!doctype html>
@@ -19,6 +31,18 @@ const { title, description = "Vibecoding portfolio and AI playground.", current 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="robots" content={robotsContent} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content="AZVAI AI Playground" />
+    <meta property="og:image" content="https://ai.azvai.com/assets/azvai_circulos.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="theme-color" content="#F1FFD2" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/azvai_circulos.png" />
   </head>
   <body>

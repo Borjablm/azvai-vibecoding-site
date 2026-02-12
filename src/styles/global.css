@@ -631,3 +631,88 @@ footer .footer-brand img {
   font-weight: 600;
   color: var(--text);
 }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.coach-chat-panel {
+  gap: 0.9rem;
+}
+
+.chat-log {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  min-height: 360px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.chat-message {
+  display: flex;
+}
+
+.chat-message p {
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  line-height: 1.5;
+  font-size: 0.92rem;
+  max-width: min(85%, 62ch);
+}
+
+.chat-message.user {
+  justify-content: flex-end;
+}
+
+.chat-message.user p {
+  background: var(--brand);
+  color: var(--text);
+}
+
+.chat-message.assistant {
+  justify-content: flex-start;
+}
+
+.chat-message.assistant p {
+  background: #f5f5f5;
+  color: var(--text);
+}
+
+.chat-form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.chat-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.72rem 0.85rem;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+.chat-form button {
+  justify-self: end;
+  border: 0;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #1a1a1a;
+  padding: 0.62rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}

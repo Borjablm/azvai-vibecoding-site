@@ -1,0 +1,220 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="AI Coach Chatbot | AZVAI Training"
+  description="Simple ChatGPT-style AI coach with PDF and image context support."
+  current="training"
+>
+  <section class="hero">
+    <p class="eyebrow">training experiment</p>
+    <h1>AI Coach Chatbot</h1>
+    <p class="lead">
+      A lightweight AI tutor/coach. Upload PDF notes or images, ask questions, and get practical step-by-step guidance.
+    </p>
+  </section>
+
+  <section class="simulator" aria-label="AI coach chatbot">
+    <section class="sim-panel">
+      <h2>1. Add Context (Optional)</h2>
+      <p class="sim-note">Upload a PDF and/or images. Image text is extracted with OCR when possible.</p>
+
+      <label for="coach-pdf">PDF document</label>
+      <input id="coach-pdf" type="file" accept=".pdf,application/pdf" />
+
+      <label for="coach-images">Images (for homework/screenshots)</label>
+      <input id="coach-images" type="file" accept="image/*" multiple />
+
+      <label for="coach-context">Context text</label>
+      <textarea
+        id="coach-context"
+        rows="8"
+        placeholder="Optional: paste extra notes or instructions for the coach."
+      ></textarea>
+
+      <p class="sim-note" id="coach-context-meta">No extra context loaded.</p>
+    </section>
+
+    <section class="sim-panel coach-chat-panel">
+      <h2>2. Chat</h2>
+      <div id="coach-chat-log" class="chat-log" aria-live="polite"></div>
+
+      <form id="coach-chat-form" class="chat-form">
+        <label for="coach-message" class="sr-only">Message</label>
+        <textarea id="coach-message" rows="3" placeholder="Ask your question..." required></textarea>
+        <button type="submit" id="coach-send-btn">Send</button>
+      </form>
+    </section>
+  </section>
+
+  <script>
+    const chatLog = document.getElementById("coach-chat-log");
+    const chatForm = document.getElementById("coach-chat-form");
+    const messageInput = document.getElementById("coach-message");
+    const sendBtn = document.getElementById("coach-send-btn");
+
+    const pdfInput = document.getElementById("coach-pdf");
+    const imageInput = document.getElementById("coach-images");
+    const contextInput = document.getElementById("coach-context");
+    const contextMeta = document.getElementById("coach-context-meta");
+
+    const state = {
+      history: [],
+      contextText: "",
+      busy: false,
+    };
+
+    function appendMessage(role, text) {
+      const item = document.createElement("div");
+      item.className = `chat-message ${role}`;
+      item.innerHTML = `<p>${(text || "").replace(/\n/g, "<br/>")}</p>`;
+      chatLog.appendChild(item);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    function setBusy(busy) {
+      state.busy = busy;
+      sendBtn.disabled = busy;
+      sendBtn.textContent = busy ? "Thinking..." : "Send";
+    }
+
+    async function parseJsonSafe(response) {
+      const raw = await response.text();
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    async function extractPdfText(file) {
+      const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";
+
+      const buffer = await file.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: buffer }).promise;
+      const chunks = [];
+
+      for (let pageIndex = 1; pageIndex <= Math.min(pdf.numPages, 35); pageIndex += 1) {
+        const page = await pdf.getPage(pageIndex);
+        const text = await page.getTextContent();
+        const line = text.items
+          .map((item) => ("str" in item ? item.str : ""))
+          .filter(Boolean)
+          .join(" ");
+        chunks.push(line);
+        if (chunks.join("\n").length > 24000) break;
+      }
+
+      return chunks.join("\n\n").trim();
+    }
+
+    async function extractImageText(file) {
+      try {
+        const Tesseract = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
+        const result = await Tesseract.recognize(file, "eng");
+        return String(result?.data?.text || "").trim();
+      } catch {
+        return "";
+      }
+    }
+
+    function syncContextMeta() {
+      const fromTextarea = String(contextInput.value || "").trim();
+      const merged = `${state.contextText}\n\n${fromTextarea}`.trim();
+      contextMeta.textContent = merged ? `Context ready (${merged.length} chars).` : "No extra context loaded.";
+      return merged.slice(0, 25000);
+    }
+
+    async function postChat(payload) {
+      const response = await fetch("/api/training/ai-coach-chatbot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await parseJsonSafe(response);
+      if (!response.ok) {
+        const message = data?.error || `Request failed (${response.status}).`;
+        throw new Error(message);
+      }
+      if (!data?.reply) throw new Error("No reply received from API.");
+      return String(data.reply);
+    }
+
+    pdfInput?.addEventListener("change", async () => {
+      const file = pdfInput.files?.[0];
+      if (!file) {
+        state.contextText = "";
+        syncContextMeta();
+        return;
+      }
+
+      contextMeta.textContent = "Reading PDF...";
+      const text = await extractPdfText(file);
+      if (!text) {
+        contextMeta.textContent = "PDF has no extractable text.";
+        return;
+      }
+      state.contextText = `PDF (${file.name}):\n${text}`;
+      syncContextMeta();
+    });
+
+    imageInput?.addEventListener("change", async () => {
+      const files = Array.from(imageInput.files || []);
+      if (files.length === 0) return;
+
+      contextMeta.textContent = "Running OCR on images...";
+      const chunks = [];
+      for (const file of files.slice(0, 4)) {
+        const text = await extractImageText(file);
+        if (text) chunks.push(`Image (${file.name}):\n${text}`);
+        else chunks.push(`Image (${file.name}): [No OCR text extracted. User should describe image manually.]`);
+      }
+
+      const merged = [state.contextText, ...chunks].filter(Boolean).join("\n\n");
+      state.contextText = merged.slice(0, 25000);
+      syncContextMeta();
+    });
+
+    contextInput?.addEventListener("input", () => {
+      syncContextMeta();
+    });
+
+    chatForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (state.busy) return;
+
+      const message = String(messageInput.value || "").trim();
+      if (!message) return;
+
+      appendMessage("user", message);
+      state.history.push({ role: "user", content: message });
+      messageInput.value = "";
+      setBusy(true);
+
+      try {
+        const reply = await postChat({
+          message,
+          history: state.history.slice(-12),
+          contextText: syncContextMeta(),
+        });
+        appendMessage("assistant", reply);
+        state.history.push({ role: "assistant", content: reply });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to get response.";
+        appendMessage("assistant", `Error: ${message}`);
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    appendMessage(
+      "assistant",
+      "Hi, I am your AI coach. Upload context if needed, then ask me anything about learning, homework, or training decisions.",
+    );
+  </script>
+</BaseLayout>
+
