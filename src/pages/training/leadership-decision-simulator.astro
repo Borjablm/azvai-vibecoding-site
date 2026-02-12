@@ -104,16 +104,38 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       button.textContent = busy ? text : button.dataset.defaultText;
     }
 
+    async function parseJsonSafe(response) {
+      const raw = await response.text();
+      if (!raw) {
+        return null;
+      }
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
     async function postSimulator(payload) {
       const res = await fetch("/api/training/leadership-decision-simulator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+
+      const data = await parseJsonSafe(res);
       if (!res.ok) {
-        throw new Error(data.error || "Request failed");
+        const message =
+          data?.error ||
+          data?.message ||
+          `Request failed (${res.status}). Check Netlify env vars and redeploy.`;
+        throw new Error(message);
       }
+
+      if (!data || typeof data !== "object") {
+        throw new Error("Server returned an invalid response.");
+      }
+
       return data.result;
     }
 

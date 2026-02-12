@@ -151,58 +151,63 @@ export const GET: APIRoute = async () =>
   });
 
 export const POST: APIRoute = async ({ request }) => {
-  const config = getApiConfig();
-  if (!config) {
-    return jsonResponse(500, {
-      error: "Server is missing Lumination API env vars.",
-    });
-  }
-
-  let body: GeneratePayload | EvaluatePayload;
   try {
-    body = await request.json();
-  } catch {
-    return jsonResponse(400, { error: "Invalid JSON body." });
+    const config = getApiConfig();
+    if (!config) {
+      return jsonResponse(500, {
+        error: "Server is missing Lumination API env vars.",
+      });
+    }
+
+    let body: GeneratePayload | EvaluatePayload;
+    try {
+      body = await request.json();
+    } catch {
+      return jsonResponse(400, { error: "Invalid JSON body." });
+    }
+
+    const mode = safeText((body as { mode?: SimulatorMode }).mode) as SimulatorMode;
+    if (mode !== "generate" && mode !== "evaluate") {
+      return jsonResponse(400, { error: "mode must be either generate or evaluate." });
+    }
+
+    const role = safeText((body as any).role);
+    const challenge = safeText((body as any).challenge);
+    const difficulty = safeText((body as any).difficulty);
+
+    if (!role || !challenge || !difficulty) {
+      return jsonResponse(400, { error: "role, challenge and difficulty are required." });
+    }
+
+    const prompt =
+      mode === "generate"
+        ? buildGeneratePrompt(body as GeneratePayload)
+        : buildEvaluatePrompt(body as EvaluatePayload);
+
+    const upstream = await callAgent(config, prompt);
+    if (!upstream.ok) {
+      return jsonResponse(upstream.status, {
+        error: "Lumination API request failed.",
+        details: upstream.data,
+      });
+    }
+
+    const assistantText = extractAssistantText(upstream.data);
+    const normalized = normalizeJsonBlock(assistantText);
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(normalized);
+    } catch {
+      return jsonResponse(502, {
+        error: "Agent did not return valid JSON.",
+        raw: assistantText,
+      });
+    }
+
+    return jsonResponse(200, { mode, result: parsed });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unexpected server error.";
+    return jsonResponse(500, { error: message });
   }
-
-  const mode = safeText((body as { mode?: SimulatorMode }).mode) as SimulatorMode;
-  if (mode !== "generate" && mode !== "evaluate") {
-    return jsonResponse(400, { error: "mode must be either generate or evaluate." });
-  }
-
-  const role = safeText((body as any).role);
-  const challenge = safeText((body as any).challenge);
-  const difficulty = safeText((body as any).difficulty);
-
-  if (!role || !challenge || !difficulty) {
-    return jsonResponse(400, { error: "role, challenge and difficulty are required." });
-  }
-
-  const prompt =
-    mode === "generate"
-      ? buildGeneratePrompt(body as GeneratePayload)
-      : buildEvaluatePrompt(body as EvaluatePayload);
-
-  const upstream = await callAgent(config, prompt);
-  if (!upstream.ok) {
-    return jsonResponse(upstream.status, {
-      error: "Lumination API request failed.",
-      details: upstream.data,
-    });
-  }
-
-  const assistantText = extractAssistantText(upstream.data);
-  const normalized = normalizeJsonBlock(assistantText);
-
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(normalized);
-  } catch {
-    return jsonResponse(502, {
-      error: "Agent did not return valid JSON.",
-      raw: assistantText,
-    });
-  }
-
-  return jsonResponse(200, { mode, result: parsed });
 };
