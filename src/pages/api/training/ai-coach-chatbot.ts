@@ -71,6 +71,11 @@ function buildPrompt(body: ChatBody) {
     "When solving homework-style prompts, explain steps and reasoning.",
     "If context is missing, ask one concise clarifying question.",
     "Prefer actionable guidance, checklists, and examples.",
+    "Response format rules:",
+    "- Use clean GitHub-flavored markdown.",
+    "- Use short headings, bullet lists, and numbered steps where useful.",
+    "- For formulas, use LaTeX delimiters like $...$ or $$...$$.",
+    "- Keep sections concise and readable in chat UI.",
     "",
     contextText ? `Context (PDF/OCR text):\n${contextText}` : "No external context provided.",
     historyBlock ? `Conversation so far:\n${historyBlock}` : "No conversation history.",
@@ -143,4 +148,3 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse(500, { error: message });
   }
 };
-

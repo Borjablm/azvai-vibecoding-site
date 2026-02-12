@@ -65,10 +65,90 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       busy: false,
     };
 
-    function appendMessage(role, text) {
+    let markdownLibPromise;
+    let mathJaxReadyPromise;
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    async function getMarkdownLibs() {
+      if (!markdownLibPromise) {
+        markdownLibPromise = Promise.all([
+          import("https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js"),
+          import("https://cdn.jsdelivr.net/npm/dompurify@3.1.7/+esm"),
+        ]).then(([markedMod, domPurifyMod]) => ({
+          marked: markedMod.marked,
+          DOMPurify: domPurifyMod.default,
+        }));
+      }
+      return markdownLibPromise;
+    }
+
+    async function ensureMathJax() {
+      if (!mathJaxReadyPromise) {
+        mathJaxReadyPromise = new Promise((resolve) => {
+          if (window.MathJax?.typesetPromise) {
+            resolve();
+            return;
+          }
+
+          window.MathJax = {
+            tex: {
+              inlineMath: [["$", "$"], ["\\(", "\\)"]],
+              displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+            },
+            svg: { fontCache: "global" },
+            startup: {
+              ready: () => {
+                window.MathJax.startup.defaultReady();
+                resolve();
+              },
+            },
+          };
+
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js";
+          script.async = true;
+          script.onerror = () => resolve();
+          document.head.appendChild(script);
+        });
+      }
+      return mathJaxReadyPromise;
+    }
+
+    async function renderAssistantContent(container, markdownText) {
+      const { marked, DOMPurify } = await getMarkdownLibs();
+      marked.setOptions({
+        gfm: true,
+        breaks: true,
+      });
+      const dirty = marked.parse(markdownText || "");
+      const clean = DOMPurify.sanitize(dirty, { USE_PROFILES: { html: true } });
+      container.innerHTML = clean;
+
+      await ensureMathJax();
+      if (window.MathJax?.typesetPromise) {
+        await window.MathJax.typesetPromise([container]).catch(() => {});
+      }
+    }
+
+    async function appendMessage(role, text) {
       const item = document.createElement("div");
       item.className = `chat-message ${role}`;
-      item.innerHTML = `<p>${(text || "").replace(/\n/g, "<br/>")}</p>`;
+      const content = document.createElement("div");
+      content.className = "chat-message-content";
+      item.appendChild(content);
+      if (role === "assistant") {
+        await renderAssistantContent(content, String(text || ""));
+      } else {
+        content.innerHTML = `<p>${escapeHtml(text).replace(/\n/g, "<br/>")}</p>`;
+      }
       chatLog.appendChild(item);
       chatLog.scrollTop = chatLog.scrollHeight;
     }
@@ -190,7 +270,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       const message = String(messageInput.value || "").trim();
       if (!message) return;
 
-      appendMessage("user", message);
+      await appendMessage("user", message);
       state.history.push({ role: "user", content: message });
       messageInput.value = "";
       setBusy(true);
@@ -201,11 +281,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           history: state.history.slice(-12),
           contextText: syncContextMeta(),
         });
-        appendMessage("assistant", reply);
+        await appendMessage("assistant", reply);
         state.history.push({ role: "assistant", content: reply });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to get response.";
-        appendMessage("assistant", `Error: ${message}`);
+        await appendMessage("assistant", `Error: ${message}`);
       } finally {
         setBusy(false);
       }
@@ -217,4 +297,3 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     );
   </script>
 </BaseLayout>
-

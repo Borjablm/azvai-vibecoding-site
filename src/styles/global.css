@@ -663,20 +663,68 @@ footer .footer-brand img {
   display: flex;
 }
 
-.chat-message p {
+.chat-message-content {
   margin: 0;
   padding: 0.65rem 0.8rem;
   border-radius: 12px;
   line-height: 1.5;
   font-size: 0.92rem;
   max-width: min(85%, 62ch);
+  overflow-x: auto;
+}
+
+.chat-message-content p {
+  margin: 0;
+}
+
+.chat-message-content h1,
+.chat-message-content h2,
+.chat-message-content h3 {
+  margin: 0.2rem 0 0.55rem;
+  line-height: 1.25;
+}
+
+.chat-message-content ul,
+.chat-message-content ol {
+  margin: 0.35rem 0 0.6rem;
+  padding-left: 1.15rem;
+}
+
+.chat-message-content li {
+  margin: 0.2rem 0;
+}
+
+.chat-message-content pre {
+  margin: 0.6rem 0;
+  padding: 0.6rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+}
+
+.chat-message-content code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.84em;
+}
+
+.chat-message-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.55rem 0;
+}
+
+.chat-message-content th,
+.chat-message-content td {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 0.35rem 0.45rem;
+  text-align: left;
 }
 
 .chat-message.user {
   justify-content: flex-end;
 }
 
-.chat-message.user p {
+.chat-message.user .chat-message-content {
   background: var(--brand);
   color: var(--text);
 }
@@ -685,7 +733,7 @@ footer .footer-brand img {
   justify-content: flex-start;
 }
 
-.chat-message.assistant p {
+.chat-message.assistant .chat-message-content {
   background: #f5f5f5;
   color: var(--text);
 }
