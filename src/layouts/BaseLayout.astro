@@ -1,0 +1,45 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: "home" | "projects" | "training";
+}
+
+const { title, description = "Vibecoding portfolio and AI playground.", current = "home" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/assets/azvai_logo.png" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-nav">
+        <a href="/" class="brand" aria-label="AZVAI home">
+          <img src="/assets/logotipo/azvai.svg" alt="AZVAI" />
+          <span>AI Playground</span>
+        </a>
+        <nav class="nav-links" aria-label="Main navigation">
+          <a href="/" aria-current={current === "home" ? "page" : undefined}>Home</a>
+          <a href="/projects" aria-current={current === "projects" ? "page" : undefined}>Projects</a>
+          <a href="/training" aria-current={current === "training" ? "page" : undefined}>Training</a>
+        </nav>
+      </header>
+
+      <main>
+        <slot />
+      </main>
+
+      <footer>
+        Built for vibecoding experiments. Infra: Astro + GitHub + Netlify.
+      </footer>
+    </div>
+  </body>
+</html>
