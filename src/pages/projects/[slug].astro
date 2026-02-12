@@ -1,0 +1,53 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { projects, getProjectBySlug } from "../../data/projects";
+
+export function getStaticPaths() {
+  return projects.map((project) => ({ params: { slug: project.slug } }));
+}
+
+const { slug } = Astro.params;
+const project = getProjectBySlug(slug ?? "");
+
+if (!project) {
+  return Astro.redirect("/projects");
+}
+---
+
+<BaseLayout title={`${project.title} | AZVAI AI Playground`} current="projects">
+  <section class="hero">
+    <p class="eyebrow">project detail</p>
+    <h1>{project.title}</h1>
+    <p class="lead">{project.summary}</p>
+  </section>
+
+  <section class="grid project-grid">
+    <article class="card span-8">
+      <p class="card-meta">Highlights</p>
+      <ul class="project-list">
+        {project.highlights.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
+    </article>
+
+    <article class="card span-4">
+      <p class="card-meta">Category</p>
+      <p>{project.category}</p>
+      <p class="card-meta">Stack</p>
+      <ul class="chip-list">
+        {project.stack.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
+      <p class="card-meta">Infrastructure</p>
+      <ul class="chip-list">
+        {project.infra.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
+      <p class="card-meta">Source Context</p>
+      <p class="context-path">{project.contextPath}</p>
+    </article>
+  </section>
+</BaseLayout>

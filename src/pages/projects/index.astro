@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { projects } from "../../data/projects";
 ---
 
 <BaseLayout title="Projects | AZVAI AI Playground" current="projects">
@@ -10,11 +11,18 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   </section>
 
   <section class="grid">
-    <article class="card span-6">
-      <div class="card-icon">&#128736;</div>
-      <h3>Sample Project</h3>
-      <p>Use this as the template for all generated project pages.</p>
-      <p class="kicker"><a href="/projects/project-name">View project &rarr;</a></p>
-    </article>
+    {projects.map((project) => (
+      <article class="card span-6">
+        <p class="card-meta">{project.category}</p>
+        <h3>{project.title}</h3>
+        <p>{project.summary}</p>
+        <ul class="chip-list">
+          {project.stack.slice(0, 3).map((item) => (
+            <li>{item}</li>
+          ))}
+        </ul>
+        <p class="kicker"><a href={`/projects/${project.slug}`}>View project &rarr;</a></p>
+      </article>
+    ))}
   </section>
 </BaseLayout>
