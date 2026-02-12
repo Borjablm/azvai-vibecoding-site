@@ -111,20 +111,40 @@ function sectionBetween(text: string, startHeading: string, nextHeading?: string
 function parseGenerateFallback(raw: string): Record<string, unknown> | null {
   const scenario = sectionBetween(raw, "Scenario", "Options");
   const optionsSection = sectionBetween(raw, "Options", "Best Option");
-  const options = optionsSection
+  let options = optionsSection
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => /^\d+\.\s+/.test(line))
     .map((line) => line.replace(/^\d+\.\s+/, "").trim());
+
+  if (options.length === 0) {
+    options = raw
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => /^[-*]\s+/.test(line))
+      .map((line) => line.replace(/^[-*]\s+/, "").trim())
+      .slice(0, 4);
+  }
 
   const bestOptionRaw = sectionBetween(raw, "Best Option", "Risk If Wrong");
   const bestOption = bestOptionRaw.replace(/^The best option is:\s*/i, "").trim();
   const risk = sectionBetween(raw, "Risk If Wrong", "Coaching Tip");
   const coachingTip = sectionBetween(raw, "Coaching Tip");
 
-  if (!scenario || options.length === 0) return null;
+  const fallbackScenario = scenario || raw.slice(0, 900).trim();
+  if (!fallbackScenario) return null;
+
+  if (options.length === 0) {
+    options = [
+      "Address the issue directly with specific examples and aligned expectations.",
+      "Lead with curiosity, ask root-cause questions, then agree on a short corrective plan.",
+      "Escalate immediately through a formal process with minimal conversation.",
+      "Delay action and monitor silently for another cycle.",
+    ];
+  }
+
   return {
-    scenario,
+    scenario: fallbackScenario,
     options,
     best_option: bestOption || options[0],
     risk_if_wrong: risk || "",
@@ -182,26 +202,41 @@ function buildEvaluatePrompt(data: EvaluatePayload) {
 
 async function callAgent(config: { baseUrl: string; apiKey: string }, prompt: string) {
   const endpoint = `${config.baseUrl}/lumination-ai/api/v1/agent/chat`;
-  const upstream = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-KEY": config.apiKey,
-      "X-REQUEST-ID": `leadership-sim-${Date.now()}`,
-    },
-    body: JSON.stringify({
-      persist: false,
-      stream: false,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
+  const retryableStatus = new Set([429, 500, 502, 503, 504]);
+  let lastStatus = 500;
+  let lastData: Record<string, unknown> = {};
 
-  const data = await upstream.json().catch(() => ({}));
-  if (!upstream.ok) {
-    return { ok: false, status: upstream.status, data };
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const upstream = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-KEY": config.apiKey,
+        "X-REQUEST-ID": `leadership-sim-${Date.now()}-${attempt}`,
+      },
+      body: JSON.stringify({
+        persist: false,
+        stream: false,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    const data = await upstream.json().catch(() => ({}));
+    if (upstream.ok) {
+      return { ok: true, status: upstream.status, data };
+    }
+
+    lastStatus = upstream.status;
+    lastData = data;
+
+    if (!retryableStatus.has(upstream.status) || attempt === 3) {
+      break;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 350 * attempt));
   }
 
-  return { ok: true, status: upstream.status, data };
+  return { ok: false, status: lastStatus, data: lastData };
 }
 
 export const GET: APIRoute = async () =>
@@ -247,7 +282,7 @@ export const POST: APIRoute = async ({ request }) => {
     const upstream = await callAgent(config, prompt);
     if (!upstream.ok) {
       return jsonResponse(upstream.status, {
-        error: "Lumination API request failed.",
+        error: `Lumination API request failed (status ${upstream.status}).`,
         details: upstream.data,
       });
     }
