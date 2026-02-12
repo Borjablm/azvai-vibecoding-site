@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+export const prerender = false;
 
 type SimulatorMode = "generate" | "evaluate";
 
@@ -48,6 +49,16 @@ function safeText(value: unknown) {
 }
 
 function extractAssistantText(response: any): string {
+  const nestedResponse = response?.response?.response;
+  if (typeof nestedResponse === "string" && nestedResponse.trim()) {
+    return nestedResponse.trim();
+  }
+
+  const nestedContent = response?.response?.content;
+  if (typeof nestedContent === "string" && nestedContent.trim()) {
+    return nestedContent.trim();
+  }
+
   if (typeof response?.message === "string" && response.message.trim()) {
     return response.message.trim();
   }
@@ -83,6 +94,55 @@ function normalizeJsonBlock(text: string) {
   }
 
   return text.trim();
+}
+
+function sectionBetween(text: string, startHeading: string, nextHeading?: string) {
+  const startRegex = new RegExp(`##\\s*${startHeading}\\s*`, "i");
+  const startMatch = text.match(startRegex);
+  if (!startMatch || startMatch.index === undefined) return "";
+  const from = startMatch.index + startMatch[0].length;
+  if (!nextHeading) return text.slice(from).trim();
+  const endRegex = new RegExp(`\\n##\\s*${nextHeading}\\s*`, "i");
+  const endMatch = text.slice(from).match(endRegex);
+  if (!endMatch || endMatch.index === undefined) return text.slice(from).trim();
+  return text.slice(from, from + endMatch.index).trim();
+}
+
+function parseGenerateFallback(raw: string): Record<string, unknown> | null {
+  const scenario = sectionBetween(raw, "Scenario", "Options");
+  const optionsSection = sectionBetween(raw, "Options", "Best Option");
+  const options = optionsSection
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => /^\d+\.\s+/.test(line))
+    .map((line) => line.replace(/^\d+\.\s+/, "").trim());
+
+  const bestOptionRaw = sectionBetween(raw, "Best Option", "Risk If Wrong");
+  const bestOption = bestOptionRaw.replace(/^The best option is:\s*/i, "").trim();
+  const risk = sectionBetween(raw, "Risk If Wrong", "Coaching Tip");
+  const coachingTip = sectionBetween(raw, "Coaching Tip");
+
+  if (!scenario || options.length === 0) return null;
+  return {
+    scenario,
+    options,
+    best_option: bestOption || options[0],
+    risk_if_wrong: risk || "",
+    coaching_tip: coachingTip || "",
+  };
+}
+
+function parseEvaluateFallback(raw: string): Record<string, unknown> {
+  const scoreMatch = raw.match(/\bscore\b[^0-9]{0,20}(\d{1,3})/i);
+  const score = scoreMatch ? Math.min(100, Math.max(0, Number(scoreMatch[1]))) : 70;
+  return {
+    score,
+    verdict: "Coaching feedback generated.",
+    blind_spot: "See what_to_improve.",
+    what_worked: raw.slice(0, 300).trim(),
+    what_to_improve: raw.slice(300, 900).trim() || "Clarify rationale and stakeholder impact.",
+    next_action: "Run the scenario again and test an alternative option.",
+  };
 }
 
 function buildGeneratePrompt(data: GeneratePayload) {
@@ -199,10 +259,19 @@ export const POST: APIRoute = async ({ request }) => {
     try {
       parsed = JSON.parse(normalized);
     } catch {
-      return jsonResponse(502, {
-        error: "Agent did not return valid JSON.",
-        raw: assistantText,
-      });
+      const fallback =
+        mode === "generate"
+          ? parseGenerateFallback(assistantText)
+          : parseEvaluateFallback(assistantText);
+
+      if (!fallback) {
+        return jsonResponse(502, {
+          error: "Agent did not return valid JSON.",
+          raw: assistantText,
+        });
+      }
+
+      parsed = fallback;
     }
 
     return jsonResponse(200, { mode, result: parsed });
