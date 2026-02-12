@@ -8,40 +8,59 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   current="home"
 >
   <section class="hero">
-    <p class="eyebrow">azvai.com / ai.azvai.com</p>
+    <img src="/assets/azvai_logo.png" alt="AZVAI logo" class="hero-logo" />
+    <p class="eyebrow">ai.azvai.com</p>
     <h1>Vibecoding ideas shipped into real products.</h1>
     <p class="lead">
-      This site is the home for experiments, prototypes, and AI-native builds. It is designed as a clean portfolio now,
-      and an automated training/dev platform next.
+      Experiments, prototypes, and AI-native builds. A clean portfolio today,
+      an automated training and dev platform next.
     </p>
   </section>
 
+  <div class="hero-banner">
+    <img src="/assets/azvai_circulos.png" alt="AZVAI circles" />
+    <div class="hero-banner-text">
+      <h2>Built fast. Validated in production.</h2>
+      <p>
+        Practical AI products, internal tooling, and data pipelines.
+        Every project here went from idea to working system using vibecoding workflows.
+      </p>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h2>Explore</h2>
+    <div class="line"></div>
+  </div>
+
   <section class="grid" aria-label="Portfolio sections">
     <article class="card span-6">
-      <h3>/projects</h3>
-      <p>Project index for all public vibecoding builds, each with architecture, stack, and key implementation notes.</p>
-      <p class="kicker"><a href="/projects">Open projects index</a></p>
+      <div class="card-icon">&#9881;</div>
+      <h3>Projects</h3>
+      <p>Index of all public vibecoding builds with architecture, stack, and implementation notes.</p>
+      <p class="kicker"><a href="/projects">Browse projects &rarr;</a></p>
     </article>
 
     <article class="card span-6">
-      <h3>/training</h3>
-      <p>Reserved for API-driven automated content generation for AI training and development programs.</p>
-      <p class="kicker"><a href="/training">Open training area</a></p>
+      <div class="card-icon">&#9889;</div>
+      <h3>Training</h3>
+      <p>Reserved area for API-driven automated content generation for AI training programs.</p>
+      <p class="kicker"><a href="/training">Open training &rarr;</a></p>
     </article>
 
-    <article class="card span-4">
+    <article class="card featured span-4">
       <h3>Design Language</h3>
-      <p>Black base, neon-cream accent (`#F1FFD2`), minimal chrome, sharp typography, and high contrast.</p>
+      <p>Light base, #F1FFD2 accent, Inter typography, soft shadows, and rounded surfaces.</p>
     </article>
 
     <article class="card span-4">
-      <h3>Deployment Infra</h3>
-      <p>Astro frontend, GitHub for versioning, Netlify for fast static deploys and easy previews.</p>
+      <h3>Deployment</h3>
+      <p>Astro for the frontend, GitHub for version control, Netlify for fast static deploys.</p>
     </article>
 
     <article class="card span-4">
       <h3>Next Phase</h3>
-      <p>Plug your team API into `/training` and progressively automate pages, route content, and generation pipelines.</p>
+      <p>Plug the team API into /training and automate pages, content routing, and generation pipelines.</p>
     </article>
   </section>
 </BaseLayout>

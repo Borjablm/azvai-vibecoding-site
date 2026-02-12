@@ -24,7 +24,6 @@ const { title, description = "Vibecoding portfolio and AI playground.", current 
       <header class="site-nav">
         <a href="/" class="brand" aria-label="AZVAI home">
           <img src="/assets/logotipo/azvai.svg" alt="AZVAI" />
-          <span>AI Playground</span>
         </a>
         <nav class="nav-links" aria-label="Main navigation">
           <a href="/" aria-current={current === "home" ? "page" : undefined}>Home</a>
@@ -38,7 +37,11 @@ const { title, description = "Vibecoding portfolio and AI playground.", current 
       </main>
 
       <footer>
-        Built for vibecoding experiments. Infra: Astro + GitHub + Netlify.
+        <div class="footer-brand">
+          <img src="/assets/logotipo/azvai.svg" alt="AZVAI" />
+          <span>AZVAI</span>
+        </div>
+        <span>Built for vibecoding experiments. Astro + GitHub + Netlify.</span>
       </footer>
     </div>
   </body>
