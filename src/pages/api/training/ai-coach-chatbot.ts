@@ -74,7 +74,7 @@ function buildPrompt(body: ChatBody) {
     "Response format rules:",
     "- Use clean GitHub-flavored markdown.",
     "- Use short headings, bullet lists, and numbered steps where useful.",
-    "- For formulas, use LaTeX delimiters \\(...\\) for inline and \\[...\\] for display. Never use $ delimiters.",
+    "- For formulas, use LaTeX: $...$ for inline math, $$...$$ for display math. \\(...\\) and \\[...\\] are also accepted.",
     "- Keep sections concise and readable in chat UI.",
     "",
     contextText ? `Context (PDF/OCR text):\n${contextText}` : "No external context provided.",

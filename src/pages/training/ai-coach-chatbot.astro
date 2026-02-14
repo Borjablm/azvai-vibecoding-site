@@ -160,7 +160,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         mathJaxReadyPromise = new Promise((resolve) => {
           if (window.MathJax?.typesetPromise) { resolve(); return; }
           window.MathJax = {
-            tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] },
+            tex: {
+              inlineMath: [["\\(", "\\)"], ["$", "$"]],
+              displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+            },
             svg: { fontCache: "global" },
             startup: { ready: () => { window.MathJax.startup.defaultReady(); resolve(); } },
           };
@@ -174,11 +177,36 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       return mathJaxReadyPromise;
     }
 
+    function protectLatex(text) {
+      const blocks = [];
+      function stash(match) {
+        const id = `\u0000MATH${blocks.length}\u0000`;
+        blocks.push(match);
+        return id;
+      }
+      // display math first (greedy variants)
+      text = text.replace(/\$\$([\s\S]*?)\$\$/g, stash);
+      text = text.replace(/\\\[([\s\S]*?)\\\]/g, stash);
+      // inline math
+      text = text.replace(/\\\(([\s\S]*?)\\\)/g, stash);
+      text = text.replace(/(?<!\$)\$(?!\$)([^\n$]+?)\$(?!\$)/g, stash);
+      return { text, blocks };
+    }
+
+    function restoreLatex(html, blocks) {
+      for (let i = 0; i < blocks.length; i++) {
+        html = html.split(`\u0000MATH${i}\u0000`).join(blocks[i]);
+      }
+      return html;
+    }
+
     async function renderAssistantContent(container, markdownText) {
       const { marked, DOMPurify } = await getMarkdownLibs();
       marked.setOptions({ gfm: true, breaks: true });
-      const dirty = marked.parse(markdownText || "");
-      const clean = DOMPurify.sanitize(dirty, { USE_PROFILES: { html: true } });
+      const { text: safeText, blocks } = protectLatex(markdownText || "");
+      const dirty = marked.parse(safeText);
+      let clean = DOMPurify.sanitize(dirty, { USE_PROFILES: { html: true } });
+      clean = restoreLatex(clean, blocks);
       container.innerHTML = clean;
       await ensureMathJax();
       if (window.MathJax?.typesetPromise) {
