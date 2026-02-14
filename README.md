@@ -6,17 +6,19 @@
 - Netlify deployment
 
 ## Routes
-- `/projects`
-- `/projects/project-name`
-- `/training`
-- `/training/course-name`
-- `/training/leadership-decision-simulator`
+- `/projects` and `/projects/project-name`
+- `/training` — hub for all training tools
+- `/training/ai-coach-chatbot` — AI tutor with PDF/image context and LaTeX support
+- `/training/pdf-quiz-generator` — generate quizzes from uploaded PDFs
+- `/training/leadership-decision-simulator` — interactive leadership scenarios
 
 ## Netlify Environment Variables
 - `LUMINATION_API_BASE_URL` (example: `https://your-host.com`)
 - `LUMINATION_API_KEY`
 
-The simulator calls Lumination through a server route:
+API routes (SSR):
+- `POST /api/training/ai-coach-chatbot`
+- `POST /api/training/pdf-quiz-generator`
 - `POST /api/training/leadership-decision-simulator`
 
 ## Run
