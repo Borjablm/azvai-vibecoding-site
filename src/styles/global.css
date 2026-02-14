@@ -1000,6 +1000,37 @@ footer .footer-text {
 .chat-message-content h3 {
   margin: 0.2rem 0 0.55rem;
   line-height: 1.25;
+  letter-spacing: -0.01em;
+  max-width: none;
+}
+
+.chat-message-content h1 {
+  font-size: 1.1rem;
+}
+
+.chat-message-content h2 {
+  font-size: 1rem;
+}
+
+.chat-message-content h3 {
+  font-size: 0.95rem;
+}
+
+/* MathJax inside chat */
+.chat-message-content mjx-container {
+  overflow-x: auto;
+  max-width: 100%;
+  display: inline-block;
+}
+
+.chat-message-content mjx-container[display="true"] {
+  display: block;
+  margin: 0.5rem 0;
+}
+
+.chat-message-content svg {
+  max-width: 100%;
+  height: auto;
 }
 
 .chat-message-content ul,

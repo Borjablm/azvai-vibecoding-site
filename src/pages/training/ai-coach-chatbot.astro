@@ -160,7 +160,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         mathJaxReadyPromise = new Promise((resolve) => {
           if (window.MathJax?.typesetPromise) { resolve(); return; }
           window.MathJax = {
-            tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]], displayMath: [["$$", "$$"], ["\\[", "\\]"]] },
+            tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] },
             svg: { fontCache: "global" },
             startup: { ready: () => { window.MathJax.startup.defaultReady(); resolve(); } },
           };
