@@ -164,7 +164,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
               inlineMath: [["\\(", "\\)"], ["$", "$"]],
               displayMath: [["$$", "$$"], ["\\[", "\\]"]],
             },
-            svg: { fontCache: "global" },
+            svg: { fontCache: "global", scale: 1 },
             startup: { ready: () => { window.MathJax.startup.defaultReady(); resolve(); } },
           };
           const script = document.createElement("script");
