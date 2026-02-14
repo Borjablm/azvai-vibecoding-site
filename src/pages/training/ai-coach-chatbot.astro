@@ -180,7 +180,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     function protectLatex(text) {
       const blocks = [];
       function stash(match) {
-        const id = `\u0000MATH${blocks.length}\u0000`;
+        const id = `XLATEXBLOCK${blocks.length}XLATEXEND`;
         blocks.push(match);
         return id;
       }
@@ -195,7 +195,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     function restoreLatex(html, blocks) {
       for (let i = 0; i < blocks.length; i++) {
-        html = html.split(`\u0000MATH${i}\u0000`).join(blocks[i]);
+        html = html.split(`XLATEXBLOCK${i}XLATEXEND`).join(blocks[i]);
       }
       return html;
     }
