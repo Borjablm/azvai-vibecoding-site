@@ -1,5 +1,29 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const tools = [
+  {
+    title: "AI Coach Chatbot",
+    description: "A lightweight AI tutor/coach. Upload PDF notes or images for context, ask questions, and get practical step-by-step guidance with markdown and LaTeX support.",
+    icon: "&#128172;",
+    href: "/training/ai-coach-chatbot",
+    label: "Open chatbot",
+  },
+  {
+    title: "PDF Quiz Generator",
+    description: "Upload a policy or learning document and generate an interactive multiple-choice quiz in seconds. Choose difficulty and question count for tailored assessments.",
+    icon: "&#128221;",
+    href: "/training/pdf-quiz-generator",
+    label: "Open tool",
+  },
+  {
+    title: "Leadership Decision Simulator",
+    description: "Practice manager decisions in realistic workplace scenarios. Generate situations grounded in company policy, choose a response, and receive an AI coaching debrief with scoring.",
+    icon: "&#127919;",
+    href: "/training/leadership-decision-simulator",
+    label: "Open simulator",
+  },
+];
 ---
 
 <BaseLayout title="Training | AZVAI AI Playground" current="training">
@@ -7,33 +31,18 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <p class="eyebrow">learning systems lab</p>
     <h1>Training Experiments</h1>
     <p class="lead">
-      Practical tools for leadership development, team capability, and purpose-driven organizational change.
+      Practical AI-powered tools for leadership development, team capability, and purpose-driven organizational change.
     </p>
   </section>
 
   <section class="grid" aria-label="Training tools">
-    <article class="card span-6">
-      <h3>AI Coach Chatbot</h3>
-      <p>Simple ChatGPT-style coach with optional PDF and image context for tutoring and homework support.</p>
-      <p class="kicker"><a href="/training/ai-coach-chatbot">Open chatbot</a></p>
-    </article>
-
-    <article class="card span-6">
-      <h3>PDF Quiz Generator</h3>
-      <p>Upload a policy or learning document and generate an interactive multiple-choice quiz in seconds.</p>
-      <p class="kicker"><a href="/training/pdf-quiz-generator">Open tool</a></p>
-    </article>
-
-    <article class="card span-6">
-      <h3>Leadership Decision Simulator</h3>
-      <p>Interactive scenarios grounded in company policy, with coaching debriefs for real decision quality.</p>
-      <p class="kicker"><a href="/training/leadership-decision-simulator">Open simulator</a></p>
-    </article>
-
-    <article class="card span-6">
-      <h3>course-name (reserved)</h3>
-      <p>Placeholder route kept for API-driven course generation workflows.</p>
-      <p class="kicker"><a href="/training/course-name">Open placeholder</a></p>
-    </article>
+    {tools.map((tool) => (
+      <article class="card span-4">
+        <div class="card-icon" set:html={tool.icon} />
+        <h3>{tool.title}</h3>
+        <p>{tool.description}</p>
+        <p class="kicker"><a href={tool.href}>{tool.label} &rarr;</a></p>
+      </article>
+    ))}
   </section>
 </BaseLayout>

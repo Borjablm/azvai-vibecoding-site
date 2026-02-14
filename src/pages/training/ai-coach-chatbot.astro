@@ -7,7 +7,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   description="Simple ChatGPT-style AI coach with PDF and image context support."
   current="training"
 >
-  <section class="hero">
+  <a href="/training" class="back-link">&larr; All training tools</a>
+
+  <section class="hero" style="padding-top: 1.5rem;">
     <p class="eyebrow">training experiment</p>
     <h1>AI Coach Chatbot</h1>
     <p class="lead">
@@ -17,7 +19,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   <section class="simulator" aria-label="AI coach chatbot">
     <section class="sim-panel">
-      <h2>1. Add Context (Optional)</h2>
+      <h2><span class="step-number">1</span> Add Context (Optional)</h2>
       <p class="sim-note">Upload a PDF and/or images. Image text is extracted with OCR when possible.</p>
 
       <label for="coach-pdf">PDF document</label>
@@ -29,7 +31,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <label for="coach-context">Context text</label>
       <textarea
         id="coach-context"
-        rows="8"
+        rows="6"
         placeholder="Optional: paste extra notes or instructions for the coach."
       ></textarea>
 
@@ -37,12 +39,12 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     </section>
 
     <section class="sim-panel coach-chat-panel">
-      <h2>2. Chat</h2>
+      <h2><span class="step-number">2</span> Chat</h2>
       <div id="coach-chat-log" class="chat-log" aria-live="polite"></div>
 
       <form id="coach-chat-form" class="chat-form">
         <label for="coach-message" class="sr-only">Message</label>
-        <textarea id="coach-message" rows="3" placeholder="Ask your question..." required></textarea>
+        <textarea id="coach-message" rows="2" placeholder="Ask your question..." required></textarea>
         <button type="submit" id="coach-send-btn">Send</button>
       </form>
     </section>
@@ -136,6 +138,19 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       if (window.MathJax?.typesetPromise) {
         await window.MathJax.typesetPromise([container]).catch(() => {});
       }
+    }
+
+    function showTypingIndicator() {
+      const item = document.createElement("div");
+      item.className = "chat-message assistant";
+      item.id = "typing-indicator";
+      item.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+      chatLog.appendChild(item);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      document.getElementById("typing-indicator")?.remove();
     }
 
     async function appendMessage(role, text) {
@@ -274,6 +289,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       state.history.push({ role: "user", content: message });
       messageInput.value = "";
       setBusy(true);
+      showTypingIndicator();
 
       try {
         const reply = await postChat({
@@ -281,13 +297,23 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           history: state.history.slice(-12),
           contextText: syncContextMeta(),
         });
+        removeTypingIndicator();
         await appendMessage("assistant", reply);
         state.history.push({ role: "assistant", content: reply });
       } catch (error) {
+        removeTypingIndicator();
         const message = error instanceof Error ? error.message : "Failed to get response.";
         await appendMessage("assistant", `Error: ${message}`);
       } finally {
         setBusy(false);
+      }
+    });
+
+    // Allow Ctrl+Enter / Cmd+Enter to submit
+    messageInput?.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        chatForm?.requestSubmit();
       }
     });
 

@@ -7,7 +7,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   description="Interactive leadership scenario simulator powered by Lumination API."
   current="training"
 >
-  <section class="hero">
+  <a href="/training" class="back-link">&larr; All training tools</a>
+
+  <section class="hero" style="padding-top: 1.5rem;">
     <p class="eyebrow">training experiment</p>
     <h1>Leadership Decision Simulator</h1>
     <p class="lead">
@@ -18,9 +20,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   <section class="simulator" aria-label="Leadership decision simulator">
     <section class="sim-panel">
-      <h2>0. Add Policy Context (Optional)</h2>
+      <h2><span class="step-number">0</span> Add Policy Context (Optional)</h2>
       <p class="sim-note">
-        Upload a policy file (`.txt`, `.md`, `.csv`, `.pdf`) or paste key policy/governance rules. Scenarios and debriefs will align to it.
+        Upload a policy file (<code>.txt</code>, <code>.md</code>, <code>.csv</code>, <code>.pdf</code>) or paste key policy/governance rules. Scenarios and debriefs will align to it.
       </p>
       <label for="policy-file">Upload policy file</label>
       <input id="policy-file" name="policyFile" type="file" accept=".txt,.md,.csv,.pdf,text/plain,text/markdown,text/csv,application/pdf" />
@@ -29,14 +31,14 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <textarea
         id="policy-context"
         name="policyContext"
-        rows="8"
+        rows="6"
         placeholder="Example: Managers must document corrective feedback within 48 hours and agree measurable milestones within 2 weeks..."
       ></textarea>
       <p class="sim-note" id="policy-meta">No policy context loaded.</p>
     </section>
 
     <form id="sim-config" class="sim-panel">
-      <h2>1. Configure Scenario</h2>
+      <h2><span class="step-number">1</span> Configure Scenario</h2>
 
       <label for="role">Manager Role</label>
       <input id="role" name="role" value="Team Lead" required />
@@ -60,25 +62,26 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     </form>
 
     <section class="sim-panel" id="scenario-panel" hidden>
-      <h2>2. Scenario</h2>
+      <h2><span class="step-number">2</span> Scenario</h2>
       <p id="scenario-text"></p>
       <div id="options-list" class="option-list"></div>
     </section>
 
     <form id="decision-form" class="sim-panel" hidden>
-      <h2>3. Your Decision</h2>
+      <h2><span class="step-number">3</span> Your Decision</h2>
       <label for="selected-option">Selected Option</label>
       <input id="selected-option" name="selectedOption" readonly required />
 
       <label for="rationale">Your Rationale</label>
-      <textarea id="rationale" name="rationale" rows="5" placeholder="Explain why you chose this option..." required></textarea>
+      <textarea id="rationale" name="rationale" rows="4" placeholder="Explain why you chose this option..." required></textarea>
 
       <button type="submit" id="evaluate-btn">Get Coaching Debrief</button>
     </form>
 
     <section class="sim-panel" id="debrief-panel" hidden>
-      <h2>4. Debrief</h2>
+      <h2><span class="step-number">4</span> Coaching Debrief</h2>
       <div id="debrief-output" class="debrief-output"></div>
+      <button type="button" id="restart-btn" style="margin-top: 0.5rem;">Start New Scenario</button>
     </section>
   </section>
 
@@ -99,6 +102,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     const debriefOutput = document.getElementById("debrief-output");
     const generateBtn = document.getElementById("generate-btn");
     const evaluateBtn = document.getElementById("evaluate-btn");
+    const restartBtn = document.getElementById("restart-btn");
     const policyFile = document.getElementById("policy-file");
     const policyContext = document.getElementById("policy-context");
     const policyMeta = document.getElementById("policy-meta");
@@ -144,6 +148,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           document.querySelectorAll(".option-button").forEach((node) => node.classList.remove("selected"));
           button.classList.add("selected");
           decisionForm.hidden = false;
+          decisionForm.scrollIntoView({ behavior: "smooth", block: "start" });
         });
         optionsList.appendChild(button);
       });
@@ -152,6 +157,15 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     function setBusy(button, busy, text) {
       button.disabled = busy;
       button.textContent = busy ? text : button.dataset.defaultText;
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     async function parseJsonSafe(response) {
@@ -219,6 +233,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         scenarioPanel.hidden = false;
         decisionForm.hidden = true;
         selectedOptionInput.value = "";
+        scenarioPanel.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to generate scenario.";
         scenarioText.textContent = message;
@@ -249,22 +264,36 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           policyContext: getPolicyContext(),
         });
 
+        const score = result.score ?? "N/A";
         debriefOutput.innerHTML = `
-          <p><strong>Score:</strong> ${result.score ?? "N/A"}</p>
-          <p><strong>Verdict:</strong> ${result.verdict ?? "N/A"}</p>
-          <p><strong>Blind Spot:</strong> ${result.blind_spot ?? "N/A"}</p>
-          <p><strong>What Worked:</strong> ${result.what_worked ?? "N/A"}</p>
-          <p><strong>What To Improve:</strong> ${result.what_to_improve ?? "N/A"}</p>
-          <p><strong>Next Action:</strong> ${result.next_action ?? "N/A"}</p>
+          <div class="debrief-score">
+            <div class="score-value">${score}</div>
+            <div class="score-label">${escapeHtml(result.verdict ?? "")}</div>
+          </div>
+          <div class="debrief-item"><strong>Blind Spot</strong>${escapeHtml(result.blind_spot ?? "N/A")}</div>
+          <div class="debrief-item"><strong>What Worked</strong>${escapeHtml(result.what_worked ?? "N/A")}</div>
+          <div class="debrief-item"><strong>What To Improve</strong>${escapeHtml(result.what_to_improve ?? "N/A")}</div>
+          <div class="debrief-item"><strong>Next Action</strong>${escapeHtml(result.next_action ?? "N/A")}</div>
         `;
         debriefPanel.hidden = false;
+        debriefPanel.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to evaluate.";
-        debriefOutput.innerHTML = `<p>${message}</p>`;
+        debriefOutput.innerHTML = `<div class="debrief-item"><strong>Error</strong>${escapeHtml(message)}</div>`;
         debriefPanel.hidden = false;
       } finally {
         setBusy(evaluateBtn, false);
       }
+    });
+
+    restartBtn?.addEventListener("click", () => {
+      scenarioPanel.hidden = true;
+      decisionForm.hidden = true;
+      debriefPanel.hidden = true;
+      selectedOptionInput.value = "";
+      optionsList.innerHTML = "";
+      debriefOutput.innerHTML = "";
+      configForm.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
     policyFile?.addEventListener("change", async () => {

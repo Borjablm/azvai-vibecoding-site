@@ -7,7 +7,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   description="Generate an interactive quiz from a PDF using Lumination API."
   current="training"
 >
-  <section class="hero">
+  <a href="/training" class="back-link">&larr; All training tools</a>
+
+  <section class="hero" style="padding-top: 1.5rem;">
     <p class="eyebrow">training experiment</p>
     <h1>PDF Quiz Generator</h1>
     <p class="lead">
@@ -18,7 +20,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   <section class="simulator" aria-label="PDF quiz generator">
     <form id="quiz-config" class="sim-panel">
-      <h2>1. Upload and Configure</h2>
+      <h2><span class="step-number">1</span> Upload and Configure</h2>
 
       <label for="source-file">Upload source PDF</label>
       <input id="source-file" name="sourceFile" type="file" accept=".pdf,application/pdf" required />
@@ -38,7 +40,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     </form>
 
     <section class="sim-panel" id="quiz-panel" hidden>
-      <h2>2. Quiz</h2>
+      <h2><span class="step-number">2</span> Quiz</h2>
+      <div class="quiz-progress-bar"><div id="quiz-progress-fill" class="quiz-progress-fill" style="width: 0%"></div></div>
       <p class="sim-note"><span id="quiz-progress"></span></p>
       <p id="quiz-question" class="quiz-question"></p>
       <div id="quiz-options" class="option-list"></div>
@@ -47,8 +50,14 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     </section>
 
     <section class="sim-panel" id="quiz-score-panel" hidden>
-      <h2>3. Results</h2>
-      <p id="quiz-score-summary" class="quiz-score"></p>
+      <h2><span class="step-number">3</span> Results</h2>
+      <div class="quiz-results">
+        <div class="score-circle">
+          <span id="quiz-score-number" class="score-number">0</span>
+          <span id="quiz-score-of" class="score-of"></span>
+        </div>
+        <p id="quiz-score-summary" class="quiz-score"></p>
+      </div>
       <button type="button" id="quiz-restart-btn">Create Another Quiz</button>
     </section>
   </section>
@@ -62,12 +71,15 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     const quizPanel = document.getElementById("quiz-panel");
     const progressEl = document.getElementById("quiz-progress");
+    const progressFill = document.getElementById("quiz-progress-fill");
     const questionEl = document.getElementById("quiz-question");
     const optionsEl = document.getElementById("quiz-options");
     const feedbackEl = document.getElementById("quiz-feedback");
     const nextBtn = document.getElementById("quiz-next-btn");
 
     const scorePanel = document.getElementById("quiz-score-panel");
+    const scoreNumber = document.getElementById("quiz-score-number");
+    const scoreOf = document.getElementById("quiz-score-of");
     const scoreSummary = document.getElementById("quiz-score-summary");
     const restartBtn = document.getElementById("quiz-restart-btn");
 
@@ -123,11 +135,17 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       return chunks.join("\n\n").trim();
     }
 
+    function updateProgress() {
+      const percent = ((state.index + 1) / state.questions.length) * 100;
+      progressFill.style.width = `${percent}%`;
+    }
+
     function renderQuestion() {
       const current = state.questions[state.index];
       if (!current) return;
 
       state.answered = false;
+      updateProgress();
       progressEl.textContent = `Question ${state.index + 1} of ${state.questions.length}`;
       questionEl.textContent = current.question || "No question text.";
       optionsEl.innerHTML = "";
@@ -176,7 +194,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       showStage("score");
       const total = state.questions.length;
       const percent = Math.round((state.score / total) * 100);
-      scoreSummary.textContent = `You scored ${state.score}/${total} (${percent}%).`;
+      scoreNumber.textContent = state.score;
+      scoreOf.textContent = `of ${total}`;
+      scoreSummary.textContent = `You scored ${percent}% on this quiz.`;
     }
 
     async function generateQuiz(payload) {
@@ -278,6 +298,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       showStage("config");
       feedbackEl.hidden = true;
       optionsEl.innerHTML = "";
+      progressFill.style.width = "0%";
     });
 
     showStage("config");

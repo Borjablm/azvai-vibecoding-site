@@ -50,7 +50,17 @@ const robotsContent = noindex ? "noindex, nofollow" : "index, follow";
       <header class="site-nav">
         <a href="/" class="brand" aria-label="AZVAI home">
           <Image src={azvaiCirculos} alt="AZVAI" width={28} height={28} />
+          <span>AZVAI</span>
         </a>
+
+        <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+
         <nav class="nav-links" aria-label="Main navigation">
           <a href="/" aria-current={current === "home" ? "page" : undefined}>Home</a>
           <a href="/projects" aria-current={current === "projects" ? "page" : undefined}>Projects</a>
@@ -67,8 +77,25 @@ const robotsContent = noindex ? "noindex, nofollow" : "index, follow";
           <Image src={azvaiCirculos} alt="AZVAI" width={22} height={22} />
           <span>AZVAI</span>
         </div>
-        <span>Purpose-driven AI experiments for systems change. Astro + GitHub + Netlify.</span>
+        <span class="footer-text">Purpose-driven AI experiments for systems change.</span>
       </footer>
     </div>
+
+    <script>
+      const toggle = document.querySelector('.nav-toggle');
+      const navLinks = document.querySelector('.nav-links');
+
+      toggle?.addEventListener('click', () => {
+        const isOpen = navLinks?.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!toggle?.contains(e.target as Node) && !navLinks?.contains(e.target as Node)) {
+          navLinks?.classList.remove('open');
+          toggle?.setAttribute('aria-expanded', 'false');
+        }
+      });
+    </script>
   </body>
 </html>

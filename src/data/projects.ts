@@ -7,6 +7,9 @@ export interface ProjectEntry {
   infra: string[];
   highlights: string[];
   contextPath: string;
+  liveUrl?: string;
+  image?: string;
+  icon: string;
 }
 
 export const projects: ProjectEntry[] = [
@@ -23,6 +26,7 @@ export const projects: ProjectEntry[] = [
       "Brand-aligned component system for consistent tool rollout",
     ],
     contextPath: "AI Tutor Tools/",
+    icon: "&#128218;",
   },
   {
     slug: "ai-tutor-admin-dashboard",
@@ -37,6 +41,7 @@ export const projects: ProjectEntry[] = [
       "Privacy-safe analytics lens (no transcript exposure)",
     ],
     contextPath: "Admin dashboard AI Tutor/",
+    icon: "&#128202;",
   },
   {
     slug: "ai-visibility-analysis",
@@ -51,6 +56,7 @@ export const projects: ProjectEntry[] = [
       "Joined analysis foundation for referral/visibility intelligence",
     ],
     contextPath: "AI Visibility Analysis/",
+    icon: "&#128065;",
   },
   {
     slug: "portfolio-report-pipeline",
@@ -65,6 +71,7 @@ export const projects: ProjectEntry[] = [
       "Execution logging and repeat-safe extraction flow",
     ],
     contextPath: "Portfolio report pipeline/",
+    icon: "&#128200;",
   },
   {
     slug: "speech-therapy-toolbox",
@@ -79,6 +86,8 @@ export const projects: ProjectEntry[] = [
       "Privacy-first demo mode architecture",
     ],
     contextPath: "Speech-therapy.site/speech-language-therapy/",
+    liveUrl: "https://speech-therapy.site",
+    icon: "&#127908;",
   },
   {
     slug: "notion-knowledge-management",
@@ -93,6 +102,7 @@ export const projects: ProjectEntry[] = [
       "Reusable operating system for AI collaborators",
     ],
     contextPath: "Notion Knowledge Management/",
+    icon: "&#128214;",
   },
   {
     slug: "google-analytics-mcp",
@@ -107,6 +117,7 @@ export const projects: ProjectEntry[] = [
       "Composable analytics tooling surface",
     ],
     contextPath: "Analytics/google-analytics-mcp/",
+    icon: "&#128208;",
   },
   {
     slug: "inspection-workflow-automation",
@@ -120,7 +131,8 @@ export const projects: ProjectEntry[] = [
       "Project learnings capture and pattern evolution",
       "High-ambiguity workflow support without brittle automation",
     ],
-    contextPath: "Inspeccións tragsa/",
+    contextPath: "Inspeccions tragsa/",
+    icon: "&#128269;",
   },
 ];
 

@@ -15,11 +15,24 @@ if (!project) {
 ---
 
 <BaseLayout title={`${project.title} | AZVAI AI Playground`} current="projects">
-  <section class="hero">
-    <p class="eyebrow">project detail</p>
+  <a href="/projects" class="back-link">&larr; All projects</a>
+
+  <section class="hero" style="padding-top: 1.5rem;">
+    <span class="category-badge" set:html={project.icon + ' ' + project.category} />
     <h1>{project.title}</h1>
     <p class="lead">{project.summary}</p>
+    {project.liveUrl && (
+      <a href={project.liveUrl} class="live-link" target="_blank" rel="noopener noreferrer">
+        Visit live site &nearr;
+      </a>
+    )}
   </section>
+
+  {project.image && (
+    <div class="project-hero-image">
+      <img src={project.image} alt={`${project.title} screenshot`} loading="lazy" />
+    </div>
+  )}
 
   <section class="grid project-grid">
     <article class="card span-8">
@@ -31,7 +44,7 @@ if (!project) {
       </ul>
     </article>
 
-    <article class="card span-4">
+    <article class="card span-4 project-sidebar">
       <p class="card-meta">Category</p>
       <p>{project.category}</p>
       <p class="card-meta">Stack</p>

@@ -1,6 +1,17 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { projects } from "../../data/projects";
+
+const categoryIcons: Record<string, string> = {
+  "Product Experiment": "&#128161;",
+  "Frontend System": "&#128187;",
+  "Data & Analytics": "&#128202;",
+  "Data Engineering": "&#128200;",
+  "Applied AI Product": "&#129302;",
+  "Knowledge Ops": "&#128214;",
+  "MCP Integration": "&#128279;",
+  "Process Automation": "&#9881;",
+};
 ---
 
 <BaseLayout title="Projects | AZVAI AI Playground" current="projects">
@@ -13,11 +24,21 @@ import { projects } from "../../data/projects";
   <section class="grid">
     {projects.map((project) => (
       <article class="card span-6">
-        <p class="card-meta">{project.category}</p>
+        <div class="card-image">
+          {project.image ? (
+            <img src={project.image} alt={`${project.title} screenshot`} loading="lazy" />
+          ) : (
+            <div class="card-image-placeholder">
+              <span class="placeholder-icon" set:html={project.icon} />
+              <span>{project.category}</span>
+            </div>
+          )}
+        </div>
+        <span class="category-badge">{project.category}</span>
         <h3>{project.title}</h3>
         <p>{project.summary}</p>
         <ul class="chip-list">
-          {project.stack.slice(0, 3).map((item) => (
+          {project.stack.slice(0, 4).map((item) => (
             <li>{item}</li>
           ))}
         </ul>
