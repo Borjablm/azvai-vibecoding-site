@@ -250,6 +250,16 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     /* ── Generate quiz ── */
     generateBtn.dataset.defaultText = generateBtn.textContent;
 
+    function unwrapResult(raw) {
+      if (typeof raw === "string") {
+        try { raw = JSON.parse(raw); } catch {}
+      }
+      if (raw && typeof raw === "object" && !Array.isArray(raw) && "result" in raw && typeof raw.result === "object") {
+        raw = raw.result;
+      }
+      return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+    }
+
     async function generateQuiz(payload) {
       const res = await fetch("/api/training/pdf-quiz-generator", {
         method: "POST",
@@ -263,10 +273,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         throw new Error(message);
       }
 
-      if (!data?.result?.questions?.length) {
+      const result = unwrapResult(data?.result);
+      if (!result?.questions?.length) {
         throw new Error("Quiz generation returned no questions.");
       }
-      return data.result;
+      return result;
     }
 
     generateBtn.addEventListener("click", async () => {

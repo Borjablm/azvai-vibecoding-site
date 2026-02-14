@@ -242,6 +242,28 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       return chunks.join("\n\n").trim();
     }
 
+    function unwrapResult(raw) {
+      if (typeof raw === "string") {
+        try { raw = JSON.parse(raw); } catch {}
+      }
+      if (raw && typeof raw === "object" && !Array.isArray(raw) && "result" in raw && typeof raw.result === "object") {
+        raw = raw.result;
+      }
+      return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+    }
+
+    function cleanTextField(value) {
+      let text = String(value || "");
+      if (text.trimStart().startsWith("{") || text.trimStart().startsWith("[")) {
+        try {
+          const inner = JSON.parse(text);
+          if (inner.scenario) return String(inner.scenario);
+          if (typeof inner === "string") return inner;
+        } catch {}
+      }
+      return text;
+    }
+
     async function postSimulator(payload) {
       const res = await fetch("/api/training/leadership-decision-simulator", {
         method: "POST",
@@ -256,7 +278,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       if (!data || typeof data !== "object") {
         throw new Error("Server returned an invalid response.");
       }
-      return data.result;
+      return unwrapResult(data.result);
     }
 
     /* ── Drop zone ── */
@@ -337,8 +359,12 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           policyContext: getPolicyContext(),
         });
 
-        state.scenario = String(result.scenario || "");
+        state.scenario = cleanTextField(result.scenario || "");
         state.options = Array.isArray(result.options) ? result.options.map((item) => String(item)) : [];
+
+        if (!state.scenario && !state.options.length) {
+          state.scenario = cleanTextField(JSON.stringify(result));
+        }
 
         scenarioText.textContent = state.scenario || "No scenario returned.";
         renderOptions(state.options);

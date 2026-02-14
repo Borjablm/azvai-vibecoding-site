@@ -727,7 +727,7 @@ footer .footer-text {
   min-height: 80px;
 }
 
-.sim-panel button,
+.sim-panel button:not(.option-button):not(.btn-secondary),
 .btn-primary {
   border: 0;
   border-radius: 999px;
@@ -741,21 +741,21 @@ footer .footer-text {
   letter-spacing: 0.01em;
 }
 
-.sim-panel button:hover,
+.sim-panel button:not(.option-button):not(.btn-secondary):hover,
 .btn-primary:hover {
   background: #333;
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
 
-.sim-panel button:disabled {
+.sim-panel button:not(.option-button):not(.btn-secondary):disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-.sim-panel button:active:not(:disabled) {
+.sim-panel button:not(.option-button):not(.btn-secondary):active:not(:disabled) {
   transform: translateY(0);
 }
 
