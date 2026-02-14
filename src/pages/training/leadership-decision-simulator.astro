@@ -19,139 +19,191 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   </section>
 
   <section class="simulator" aria-label="Leadership decision simulator">
-    <section class="sim-panel">
-      <h2><span class="step-number">0</span> Add Policy Context (Optional)</h2>
-      <p class="sim-note">
-        Upload a policy file (<code>.txt</code>, <code>.md</code>, <code>.csv</code>, <code>.pdf</code>) or paste key policy/governance rules. Scenarios and debriefs will align to it.
-      </p>
-      <label for="policy-file">Upload policy file</label>
-      <input id="policy-file" name="policyFile" type="file" accept=".txt,.md,.csv,.pdf,text/plain,text/markdown,text/csv,application/pdf" />
+    <div class="wizard-progress">
+      <div class="wizard-progress-step active" data-step="0">
+        <span class="wizard-progress-dot">1</span>
+        <span class="wizard-progress-label">Context</span>
+      </div>
+      <div class="wizard-progress-line"></div>
+      <div class="wizard-progress-step" data-step="1">
+        <span class="wizard-progress-dot">2</span>
+        <span class="wizard-progress-label">Configure</span>
+      </div>
+      <div class="wizard-progress-line"></div>
+      <div class="wizard-progress-step" data-step="2">
+        <span class="wizard-progress-dot">3</span>
+        <span class="wizard-progress-label">Scenario</span>
+      </div>
+      <div class="wizard-progress-line"></div>
+      <div class="wizard-progress-step" data-step="3">
+        <span class="wizard-progress-dot">4</span>
+        <span class="wizard-progress-label">Decision</span>
+      </div>
+      <div class="wizard-progress-line"></div>
+      <div class="wizard-progress-step" data-step="4">
+        <span class="wizard-progress-dot">5</span>
+        <span class="wizard-progress-label">Debrief</span>
+      </div>
+    </div>
 
-      <label for="policy-context">Or paste policy context</label>
-      <textarea
-        id="policy-context"
-        name="policyContext"
-        rows="6"
-        placeholder="Example: Managers must document corrective feedback within 48 hours and agree measurable milestones within 2 weeks..."
-      ></textarea>
-      <p class="sim-note" id="policy-meta">No policy context loaded.</p>
-    </section>
+    <!-- Step 1: Policy Context -->
+    <div class="wizard-step active" data-step="0">
+      <section class="sim-panel">
+        <h2>Add Policy Context (Optional)</h2>
+        <p class="sim-note">
+          Upload a policy file or paste key policy/governance rules. Scenarios and debriefs will align to it.
+        </p>
 
-    <form id="sim-config" class="sim-panel">
-      <h2><span class="step-number">1</span> Configure Scenario</h2>
+        <div class="drop-zone" id="policy-drop-zone">
+          <span class="drop-zone-icon">&#128203;</span>
+          <p class="drop-zone-label">Drag &amp; drop a policy file</p>
+          <p class="drop-zone-hint">or click to browse &middot; .txt, .md, .csv, .pdf</p>
+          <p class="drop-zone-filename" id="policy-filename" hidden></p>
+          <input id="policy-file" type="file" accept=".txt,.md,.csv,.pdf,text/plain,text/markdown,text/csv,application/pdf" />
+        </div>
 
-      <label for="role">Manager Role</label>
-      <input id="role" name="role" value="Team Lead" required />
+        <label for="policy-context">Or paste policy context</label>
+        <textarea
+          id="policy-context"
+          rows="5"
+          placeholder="Example: Managers must document corrective feedback within 48 hours and agree measurable milestones within 2 weeks..."
+        ></textarea>
+        <p class="sim-note" id="policy-meta">No policy context loaded.</p>
 
-      <label for="challenge">Challenge Type</label>
-      <select id="challenge" name="challenge" required>
-        <option value="performance-feedback">Performance feedback</option>
-        <option value="conflict-resolution">Conflict resolution</option>
-        <option value="delegation-pressure">Delegation under pressure</option>
-        <option value="change-management">Change management</option>
-      </select>
+        <div class="wizard-nav">
+          <button type="button" id="to-config-btn">Continue</button>
+          <button type="button" class="btn-secondary btn-skip" id="skip-policy-btn">Skip &rarr;</button>
+        </div>
+      </section>
+    </div>
 
-      <label for="difficulty">Difficulty</label>
-      <select id="difficulty" name="difficulty" required>
-        <option value="easy">Easy</option>
-        <option value="intermediate" selected>Intermediate</option>
-        <option value="advanced">Advanced</option>
-      </select>
+    <!-- Step 2: Configure Scenario -->
+    <div class="wizard-step" data-step="1">
+      <section class="sim-panel">
+        <h2>Configure Scenario</h2>
 
-      <button type="submit" id="generate-btn">Generate Scenario</button>
-    </form>
+        <label for="role">Manager Role</label>
+        <input id="role" value="Team Lead" required />
 
-    <section class="sim-panel" id="scenario-panel" hidden>
-      <h2><span class="step-number">2</span> Scenario</h2>
-      <p id="scenario-text"></p>
-      <div id="options-list" class="option-list"></div>
-    </section>
+        <label for="challenge">Challenge Type</label>
+        <select id="challenge" required>
+          <option value="performance-feedback">Performance feedback</option>
+          <option value="conflict-resolution">Conflict resolution</option>
+          <option value="delegation-pressure">Delegation under pressure</option>
+          <option value="change-management">Change management</option>
+        </select>
 
-    <form id="decision-form" class="sim-panel" hidden>
-      <h2><span class="step-number">3</span> Your Decision</h2>
-      <label for="selected-option">Selected Option</label>
-      <input id="selected-option" name="selectedOption" readonly required />
+        <label for="difficulty">Difficulty</label>
+        <select id="difficulty" required>
+          <option value="easy">Easy</option>
+          <option value="intermediate" selected>Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
 
-      <label for="rationale">Your Rationale</label>
-      <textarea id="rationale" name="rationale" rows="4" placeholder="Explain why you chose this option..." required></textarea>
+        <div class="wizard-nav">
+          <button type="button" class="btn-secondary" data-back>Back</button>
+          <button type="button" id="generate-btn">Generate Scenario</button>
+        </div>
+      </section>
+    </div>
 
-      <button type="submit" id="evaluate-btn">Get Coaching Debrief</button>
-    </form>
+    <!-- Step 3: Scenario -->
+    <div class="wizard-step" data-step="2">
+      <section class="sim-panel">
+        <h2>Scenario</h2>
+        <p id="scenario-text"></p>
+        <div id="options-list" class="option-list"></div>
+        <p class="sim-note" id="pick-hint" hidden>Select an option above to continue.</p>
+      </section>
+    </div>
 
-    <section class="sim-panel" id="debrief-panel" hidden>
-      <h2><span class="step-number">4</span> Coaching Debrief</h2>
-      <div id="debrief-output" class="debrief-output"></div>
-      <button type="button" id="restart-btn" style="margin-top: 0.5rem;">Start New Scenario</button>
-    </section>
+    <!-- Step 4: Decision -->
+    <div class="wizard-step" data-step="3">
+      <section class="sim-panel">
+        <h2>Your Decision</h2>
+        <label for="selected-option">Selected Option</label>
+        <input id="selected-option" readonly required />
+
+        <label for="rationale">Your Rationale</label>
+        <textarea id="rationale" rows="4" placeholder="Explain why you chose this option..." required></textarea>
+
+        <div class="wizard-nav">
+          <button type="button" class="btn-secondary" id="back-to-scenario">Back to Scenario</button>
+          <button type="button" id="evaluate-btn">Get Coaching Debrief</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Step 5: Debrief -->
+    <div class="wizard-step" data-step="4">
+      <section class="sim-panel">
+        <h2>Coaching Debrief</h2>
+        <div id="debrief-output" class="debrief-output"></div>
+        <div class="wizard-nav">
+          <button type="button" id="restart-btn">Start New Scenario</button>
+        </div>
+      </section>
+    </div>
   </section>
 
   <script>
+    /* ── Wizard ── */
+    const wizardSteps = document.querySelectorAll(".wizard-step");
+    const progressSteps = document.querySelectorAll(".wizard-progress-step");
+    const progressLines = document.querySelectorAll(".wizard-progress-line");
+    let currentStep = 0;
+
+    function goToStep(step) {
+      wizardSteps.forEach((el, i) => el.classList.toggle("active", i === step));
+      progressSteps.forEach((el, i) => {
+        el.classList.remove("active", "done");
+        if (i < step) el.classList.add("done");
+        else if (i === step) el.classList.add("active");
+      });
+      progressLines.forEach((el, i) => el.classList.toggle("done", i < step));
+      currentStep = step;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    document.querySelectorAll("[data-back]").forEach((btn) => {
+      btn.addEventListener("click", () => goToStep(currentStep - 1));
+    });
+
+    /* ── DOM refs ── */
+    const policyFileInput = document.getElementById("policy-file");
+    const policyDropZone = document.getElementById("policy-drop-zone");
+    const policyFilename = document.getElementById("policy-filename");
+    const policyContext = document.getElementById("policy-context");
+    const policyMeta = document.getElementById("policy-meta");
+    const toConfigBtn = document.getElementById("to-config-btn");
+    const skipPolicyBtn = document.getElementById("skip-policy-btn");
+
+    const roleInput = document.getElementById("role");
+    const challengeSelect = document.getElementById("challenge");
+    const difficultySelect = document.getElementById("difficulty");
+    const generateBtn = document.getElementById("generate-btn");
+
+    const scenarioText = document.getElementById("scenario-text");
+    const optionsList = document.getElementById("options-list");
+    const pickHint = document.getElementById("pick-hint");
+
+    const selectedOptionInput = document.getElementById("selected-option");
+    const rationaleInput = document.getElementById("rationale");
+    const backToScenario = document.getElementById("back-to-scenario");
+    const evaluateBtn = document.getElementById("evaluate-btn");
+
+    const debriefOutput = document.getElementById("debrief-output");
+    const restartBtn = document.getElementById("restart-btn");
+
     const state = {
       config: null,
       scenario: null,
       options: [],
     };
 
-    const configForm = document.getElementById("sim-config");
-    const decisionForm = document.getElementById("decision-form");
-    const scenarioPanel = document.getElementById("scenario-panel");
-    const debriefPanel = document.getElementById("debrief-panel");
-    const scenarioText = document.getElementById("scenario-text");
-    const optionsList = document.getElementById("options-list");
-    const selectedOptionInput = document.getElementById("selected-option");
-    const debriefOutput = document.getElementById("debrief-output");
-    const generateBtn = document.getElementById("generate-btn");
-    const evaluateBtn = document.getElementById("evaluate-btn");
-    const restartBtn = document.getElementById("restart-btn");
-    const policyFile = document.getElementById("policy-file");
-    const policyContext = document.getElementById("policy-context");
-    const policyMeta = document.getElementById("policy-meta");
-
+    /* ── Helpers ── */
     function getPolicyContext() {
       return String(policyContext?.value || "").trim();
-    }
-
-    async function extractPdfText(file) {
-      const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs");
-      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";
-
-      const buffer = await file.arrayBuffer();
-      const pdf = await pdfjs.getDocument({ data: buffer }).promise;
-      const chunks = [];
-
-      for (let pageIndex = 1; pageIndex <= Math.min(pdf.numPages, 20); pageIndex += 1) {
-        const page = await pdf.getPage(pageIndex);
-        const text = await page.getTextContent();
-        const line = text.items
-          .map((item) => ("str" in item ? item.str : ""))
-          .filter(Boolean)
-          .join(" ");
-        chunks.push(line);
-
-        if (chunks.join("\n").length > 20000) {
-          break;
-        }
-      }
-
-      return chunks.join("\n\n").trim();
-    }
-
-    function renderOptions(options) {
-      optionsList.innerHTML = "";
-      options.forEach((option, index) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "option-button";
-        button.textContent = `${index + 1}. ${option}`;
-        button.addEventListener("click", () => {
-          selectedOptionInput.value = option;
-          document.querySelectorAll(".option-button").forEach((node) => node.classList.remove("selected"));
-          button.classList.add("selected");
-          decisionForm.hidden = false;
-          decisionForm.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-        optionsList.appendChild(button);
-      });
     }
 
     function setBusy(button, busy, text) {
@@ -170,14 +222,24 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     async function parseJsonSafe(response) {
       const raw = await response.text();
-      if (!raw) {
-        return null;
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+
+    async function extractPdfText(file) {
+      const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";
+      const buffer = await file.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: buffer }).promise;
+      const chunks = [];
+      for (let p = 1; p <= Math.min(pdf.numPages, 20); p += 1) {
+        const page = await pdf.getPage(p);
+        const text = await page.getTextContent();
+        const line = text.items.map((item) => ("str" in item ? item.str : "")).filter(Boolean).join(" ");
+        chunks.push(line);
+        if (chunks.join("\n").length > 20000) break;
       }
-      try {
-        return JSON.parse(raw);
-      } catch {
-        return null;
-      }
+      return chunks.join("\n\n").trim();
     }
 
     async function postSimulator(payload) {
@@ -186,37 +248,87 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await parseJsonSafe(res);
       if (!res.ok) {
-        const message =
-          data?.error ||
-          data?.message ||
-          `Request failed (${res.status}). Check Netlify env vars and redeploy.`;
+        const message = data?.error || data?.message || `Request failed (${res.status}). Check Netlify env vars and redeploy.`;
         throw new Error(message);
       }
-
       if (!data || typeof data !== "object") {
         throw new Error("Server returned an invalid response.");
       }
-
       return data.result;
     }
 
+    /* ── Drop zone ── */
+    function setupDropZone(zone, input, onFiles) {
+      ["dragenter", "dragover"].forEach((evt) =>
+        zone.addEventListener(evt, (e) => { e.preventDefault(); zone.classList.add("drag-over"); })
+      );
+      ["dragleave", "drop"].forEach((evt) =>
+        zone.addEventListener(evt, () => zone.classList.remove("drag-over"))
+      );
+      zone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const files = Array.from(e.dataTransfer?.files || []);
+        if (files.length) onFiles(files);
+      });
+      input.addEventListener("change", () => {
+        const files = Array.from(input.files || []);
+        if (files.length) onFiles(files);
+      });
+    }
+
+    setupDropZone(policyDropZone, policyFileInput, async (files) => {
+      const file = files[0];
+      if (!file) return;
+
+      policyDropZone.classList.remove("has-file");
+      policyFilename.hidden = true;
+
+      try {
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        policyMeta.textContent = isPdf ? "Reading PDF..." : "Reading file...";
+        const text = isPdf ? await extractPdfText(file) : await file.text();
+        const cleaned = text.trim();
+
+        if (!cleaned) {
+          policyMeta.textContent = isPdf
+            ? "PDF has no extractable text. Paste policy text manually."
+            : "Uploaded file is empty.";
+          return;
+        }
+
+        policyContext.value = cleaned.slice(0, 12000);
+        policyDropZone.classList.add("has-file");
+        policyFilename.textContent = file.name;
+        policyFilename.hidden = false;
+        policyMeta.textContent = `Loaded "${file.name}" (${policyContext.value.length} chars).`;
+      } catch {
+        policyMeta.textContent = "Could not read file. Use .txt/.md/.csv or paste content manually.";
+      }
+    });
+
+    policyContext?.addEventListener("input", () => {
+      const charCount = getPolicyContext().length;
+      policyMeta.textContent = charCount > 0 ? `Policy context ready (${charCount} chars).` : "No policy context loaded.";
+    });
+
+    /* ── Step 1 → Step 2 ── */
+    toConfigBtn.addEventListener("click", () => goToStep(1));
+    skipPolicyBtn.addEventListener("click", () => goToStep(1));
+
+    /* ── Generate scenario ── */
     generateBtn.dataset.defaultText = generateBtn.textContent;
     evaluateBtn.dataset.defaultText = evaluateBtn.textContent;
 
-    configForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
+    generateBtn.addEventListener("click", async () => {
       setBusy(generateBtn, true, "Generating...");
-      debriefPanel.hidden = true;
 
       try {
-        const formData = new FormData(configForm);
         state.config = {
-          role: String(formData.get("role") || "").trim(),
-          challenge: String(formData.get("challenge") || "").trim(),
-          difficulty: String(formData.get("difficulty") || "").trim(),
+          role: String(roleInput.value || "").trim(),
+          challenge: String(challengeSelect.value || "").trim(),
+          difficulty: String(difficultySelect.value || "").trim(),
         };
 
         const result = await postSimulator({
@@ -230,30 +342,46 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
         scenarioText.textContent = state.scenario || "No scenario returned.";
         renderOptions(state.options);
-        scenarioPanel.hidden = false;
-        decisionForm.hidden = true;
-        selectedOptionInput.value = "";
-        scenarioPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        goToStep(2);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to generate scenario.";
         scenarioText.textContent = message;
-        scenarioPanel.hidden = false;
-        optionsList.innerHTML = "";
+        goToStep(2);
       } finally {
         setBusy(generateBtn, false);
       }
     });
 
-    decisionForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
+    function renderOptions(options) {
+      optionsList.innerHTML = "";
+      pickHint.hidden = false;
+      options.forEach((option, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "option-button";
+        button.textContent = `${index + 1}. ${option}`;
+        button.addEventListener("click", () => {
+          selectedOptionInput.value = option;
+          document.querySelectorAll(".option-button").forEach((node) => node.classList.remove("selected"));
+          button.classList.add("selected");
+          pickHint.hidden = true;
+          goToStep(3);
+        });
+        optionsList.appendChild(button);
+      });
+    }
+
+    /* ── Decision ── */
+    backToScenario.addEventListener("click", () => goToStep(2));
+
+    evaluateBtn.addEventListener("click", async () => {
+      const rationale = String(rationaleInput.value || "").trim();
+      const selectedOption = String(selectedOptionInput.value || "").trim();
+      if (!rationale) { rationaleInput.focus(); return; }
+
       setBusy(evaluateBtn, true, "Evaluating...");
-      debriefPanel.hidden = true;
 
       try {
-        const formData = new FormData(decisionForm);
-        const rationale = String(formData.get("rationale") || "").trim();
-        const selectedOption = String(formData.get("selectedOption") || "").trim();
-
         const result = await postSimulator({
           mode: "evaluate",
           ...state.config,
@@ -275,56 +403,23 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <div class="debrief-item"><strong>What To Improve</strong>${escapeHtml(result.what_to_improve ?? "N/A")}</div>
           <div class="debrief-item"><strong>Next Action</strong>${escapeHtml(result.next_action ?? "N/A")}</div>
         `;
-        debriefPanel.hidden = false;
-        debriefPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        goToStep(4);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to evaluate.";
         debriefOutput.innerHTML = `<div class="debrief-item"><strong>Error</strong>${escapeHtml(message)}</div>`;
-        debriefPanel.hidden = false;
+        goToStep(4);
       } finally {
         setBusy(evaluateBtn, false);
       }
     });
 
-    restartBtn?.addEventListener("click", () => {
-      scenarioPanel.hidden = true;
-      decisionForm.hidden = true;
-      debriefPanel.hidden = true;
+    /* ── Restart ── */
+    restartBtn.addEventListener("click", () => {
       selectedOptionInput.value = "";
+      rationaleInput.value = "";
       optionsList.innerHTML = "";
       debriefOutput.innerHTML = "";
-      configForm.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-
-    policyFile?.addEventListener("change", async () => {
-      const file = policyFile.files?.[0];
-      if (!file) {
-        policyMeta.textContent = "No policy context loaded.";
-        return;
-      }
-
-      try {
-        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-        const text = isPdf ? await extractPdfText(file) : await file.text();
-        const cleaned = text.trim();
-        if (!cleaned) {
-          policyMeta.textContent = isPdf
-            ? "PDF has no extractable text. If it is scanned, paste policy text manually."
-            : "Uploaded file is empty.";
-          return;
-        }
-
-        policyContext.value = cleaned.slice(0, 12000);
-        const charCount = policyContext.value.length;
-        policyMeta.textContent = `Loaded "${file.name}" (${charCount} chars).`;
-      } catch {
-        policyMeta.textContent = "Could not read file. Use .txt/.md/.csv or paste content manually.";
-      }
-    });
-
-    policyContext?.addEventListener("input", () => {
-      const charCount = getPolicyContext().length;
-      policyMeta.textContent = charCount > 0 ? `Policy context ready (${charCount} chars).` : "No policy context loaded.";
+      goToStep(0);
     });
   </script>
 </BaseLayout>

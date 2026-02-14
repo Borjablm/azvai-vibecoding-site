@@ -18,46 +18,108 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   </section>
 
   <section class="simulator" aria-label="AI coach chatbot">
-    <section class="sim-panel">
-      <h2><span class="step-number">1</span> Add Context (Optional)</h2>
-      <p class="sim-note">Upload a PDF and/or images. Image text is extracted with OCR when possible.</p>
+    <div class="wizard-progress">
+      <div class="wizard-progress-step active" data-step="0">
+        <span class="wizard-progress-dot">1</span>
+        <span class="wizard-progress-label">Context</span>
+      </div>
+      <div class="wizard-progress-line"></div>
+      <div class="wizard-progress-step" data-step="1">
+        <span class="wizard-progress-dot">2</span>
+        <span class="wizard-progress-label">Chat</span>
+      </div>
+    </div>
 
-      <label for="coach-pdf">PDF document</label>
-      <input id="coach-pdf" type="file" accept=".pdf,application/pdf" />
+    <!-- Step 1: Context -->
+    <div class="wizard-step active" data-step="0">
+      <section class="sim-panel">
+        <h2>Add Context (Optional)</h2>
+        <p class="sim-note">Upload a PDF and/or images. Image text is extracted with OCR when possible.</p>
 
-      <label for="coach-images">Images (for homework/screenshots)</label>
-      <input id="coach-images" type="file" accept="image/*" multiple />
+        <label>PDF document</label>
+        <div class="drop-zone" id="pdf-drop-zone">
+          <span class="drop-zone-icon">&#128196;</span>
+          <p class="drop-zone-label">Drag &amp; drop a PDF</p>
+          <p class="drop-zone-hint">or click to browse</p>
+          <p class="drop-zone-filename" id="pdf-filename" hidden></p>
+          <input id="coach-pdf" type="file" accept=".pdf,application/pdf" />
+        </div>
 
-      <label for="coach-context">Context text</label>
-      <textarea
-        id="coach-context"
-        rows="6"
-        placeholder="Optional: paste extra notes or instructions for the coach."
-      ></textarea>
+        <label>Images (homework / screenshots)</label>
+        <div class="drop-zone" id="img-drop-zone">
+          <span class="drop-zone-icon">&#128247;</span>
+          <p class="drop-zone-label">Drag &amp; drop images</p>
+          <p class="drop-zone-hint">or click to browse &middot; up to 4 images</p>
+          <p class="drop-zone-filename" id="img-filename" hidden></p>
+          <input id="coach-images" type="file" accept="image/*" multiple />
+        </div>
 
-      <p class="sim-note" id="coach-context-meta">No extra context loaded.</p>
-    </section>
+        <label for="coach-context">Extra notes</label>
+        <textarea
+          id="coach-context"
+          rows="4"
+          placeholder="Optional: paste extra notes or instructions for the coach."
+        ></textarea>
 
-    <section class="sim-panel coach-chat-panel">
-      <h2><span class="step-number">2</span> Chat</h2>
-      <div id="coach-chat-log" class="chat-log" aria-live="polite"></div>
+        <p class="sim-note" id="coach-context-meta">No extra context loaded.</p>
 
-      <form id="coach-chat-form" class="chat-form">
-        <label for="coach-message" class="sr-only">Message</label>
-        <textarea id="coach-message" rows="2" placeholder="Ask your question..." required></textarea>
-        <button type="submit" id="coach-send-btn">Send</button>
-      </form>
-    </section>
+        <div class="wizard-nav">
+          <button type="button" id="start-chat-btn">Start Chatting</button>
+          <button type="button" class="btn-secondary btn-skip" id="skip-context-btn">Skip &rarr;</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Step 2: Chat -->
+    <div class="wizard-step" data-step="1">
+      <section class="sim-panel coach-chat-panel">
+        <h2>Chat</h2>
+        <button type="button" class="btn-secondary" id="edit-context-btn" style="width: fit-content; padding: 0.4rem 0.9rem; font-size: 0.8rem;">Edit context</button>
+        <div id="coach-chat-log" class="chat-log" aria-live="polite"></div>
+
+        <form id="coach-chat-form" class="chat-form">
+          <label for="coach-message" class="sr-only">Message</label>
+          <textarea id="coach-message" rows="2" placeholder="Ask your question..." required></textarea>
+          <button type="submit" id="coach-send-btn">Send</button>
+        </form>
+      </section>
+    </div>
   </section>
 
   <script>
+    /* ── Wizard ── */
+    const wizardSteps = document.querySelectorAll(".wizard-step");
+    const progressSteps = document.querySelectorAll(".wizard-progress-step");
+    const progressLines = document.querySelectorAll(".wizard-progress-line");
+    let currentStep = 0;
+
+    function goToStep(step) {
+      wizardSteps.forEach((el, i) => el.classList.toggle("active", i === step));
+      progressSteps.forEach((el, i) => {
+        el.classList.remove("active", "done");
+        if (i < step) el.classList.add("done");
+        else if (i === step) el.classList.add("active");
+      });
+      progressLines.forEach((el, i) => el.classList.toggle("done", i < step));
+      currentStep = step;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    /* ── DOM refs ── */
     const chatLog = document.getElementById("coach-chat-log");
     const chatForm = document.getElementById("coach-chat-form");
     const messageInput = document.getElementById("coach-message");
     const sendBtn = document.getElementById("coach-send-btn");
+    const startChatBtn = document.getElementById("start-chat-btn");
+    const skipContextBtn = document.getElementById("skip-context-btn");
+    const editContextBtn = document.getElementById("edit-context-btn");
 
     const pdfInput = document.getElementById("coach-pdf");
+    const pdfDropZone = document.getElementById("pdf-drop-zone");
+    const pdfFilename = document.getElementById("pdf-filename");
     const imageInput = document.getElementById("coach-images");
+    const imgDropZone = document.getElementById("img-drop-zone");
+    const imgFilename = document.getElementById("img-filename");
     const contextInput = document.getElementById("coach-context");
     const contextMeta = document.getElementById("coach-context-meta");
 
@@ -70,6 +132,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     let markdownLibPromise;
     let mathJaxReadyPromise;
 
+    /* ── Helpers ── */
     function escapeHtml(value) {
       return String(value || "")
         .replace(/&/g, "&amp;")
@@ -95,25 +158,12 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     async function ensureMathJax() {
       if (!mathJaxReadyPromise) {
         mathJaxReadyPromise = new Promise((resolve) => {
-          if (window.MathJax?.typesetPromise) {
-            resolve();
-            return;
-          }
-
+          if (window.MathJax?.typesetPromise) { resolve(); return; }
           window.MathJax = {
-            tex: {
-              inlineMath: [["$", "$"], ["\\(", "\\)"]],
-              displayMath: [["$$", "$$"], ["\\[", "\\]"]],
-            },
+            tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]], displayMath: [["$$", "$$"], ["\\[", "\\]"]] },
             svg: { fontCache: "global" },
-            startup: {
-              ready: () => {
-                window.MathJax.startup.defaultReady();
-                resolve();
-              },
-            },
+            startup: { ready: () => { window.MathJax.startup.defaultReady(); resolve(); } },
           };
-
           const script = document.createElement("script");
           script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js";
           script.async = true;
@@ -126,20 +176,131 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     async function renderAssistantContent(container, markdownText) {
       const { marked, DOMPurify } = await getMarkdownLibs();
-      marked.setOptions({
-        gfm: true,
-        breaks: true,
-      });
+      marked.setOptions({ gfm: true, breaks: true });
       const dirty = marked.parse(markdownText || "");
       const clean = DOMPurify.sanitize(dirty, { USE_PROFILES: { html: true } });
       container.innerHTML = clean;
-
       await ensureMathJax();
       if (window.MathJax?.typesetPromise) {
         await window.MathJax.typesetPromise([container]).catch(() => {});
       }
     }
 
+    async function parseJsonSafe(response) {
+      const raw = await response.text();
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+
+    async function extractPdfText(file) {
+      const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";
+      const buffer = await file.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: buffer }).promise;
+      const chunks = [];
+      for (let p = 1; p <= Math.min(pdf.numPages, 35); p += 1) {
+        const page = await pdf.getPage(p);
+        const text = await page.getTextContent();
+        const line = text.items.map((item) => ("str" in item ? item.str : "")).filter(Boolean).join(" ");
+        chunks.push(line);
+        if (chunks.join("\n").length > 24000) break;
+      }
+      return chunks.join("\n\n").trim();
+    }
+
+    async function extractImageText(file) {
+      try {
+        const Tesseract = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
+        const result = await Tesseract.recognize(file, "eng");
+        return String(result?.data?.text || "").trim();
+      } catch { return ""; }
+    }
+
+    /* ── Drop zone setup ── */
+    function setupDropZone(zone, input, onFiles) {
+      ["dragenter", "dragover"].forEach((evt) =>
+        zone.addEventListener(evt, (e) => { e.preventDefault(); zone.classList.add("drag-over"); })
+      );
+      ["dragleave", "drop"].forEach((evt) =>
+        zone.addEventListener(evt, () => zone.classList.remove("drag-over"))
+      );
+      zone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const files = Array.from(e.dataTransfer?.files || []);
+        if (files.length) onFiles(files);
+      });
+      input.addEventListener("change", () => {
+        const files = Array.from(input.files || []);
+        if (files.length) onFiles(files);
+      });
+    }
+
+    function syncContextMeta() {
+      const fromTextarea = String(contextInput.value || "").trim();
+      const merged = `${state.contextText}\n\n${fromTextarea}`.trim();
+      contextMeta.textContent = merged ? `Context ready (${merged.length} chars).` : "No extra context loaded.";
+      return merged.slice(0, 25000);
+    }
+
+    setupDropZone(pdfDropZone, pdfInput, async (files) => {
+      const file = files[0];
+      if (!file) return;
+
+      pdfDropZone.classList.remove("has-file");
+      pdfFilename.hidden = true;
+      contextMeta.textContent = "Reading PDF...";
+
+      try {
+        const text = await extractPdfText(file);
+        if (!text) {
+          contextMeta.textContent = "PDF has no extractable text.";
+          return;
+        }
+        state.contextText = `PDF (${file.name}):\n${text}`;
+        pdfDropZone.classList.add("has-file");
+        pdfFilename.textContent = file.name;
+        pdfFilename.hidden = false;
+        syncContextMeta();
+      } catch {
+        contextMeta.textContent = "Could not read PDF.";
+      }
+    });
+
+    setupDropZone(imgDropZone, imageInput, async (files) => {
+      imgDropZone.classList.remove("has-file");
+      imgFilename.hidden = true;
+      contextMeta.textContent = "Running OCR on images...";
+
+      const chunks = [];
+      for (const file of files.slice(0, 4)) {
+        const text = await extractImageText(file);
+        if (text) chunks.push(`Image (${file.name}):\n${text}`);
+        else chunks.push(`Image (${file.name}): [No OCR text extracted.]`);
+      }
+
+      const merged = [state.contextText, ...chunks].filter(Boolean).join("\n\n");
+      state.contextText = merged.slice(0, 25000);
+      imgDropZone.classList.add("has-file");
+      imgFilename.textContent = `${files.length} image(s) loaded`;
+      imgFilename.hidden = false;
+      syncContextMeta();
+    });
+
+    contextInput?.addEventListener("input", () => syncContextMeta());
+
+    /* ── Step navigation ── */
+    function enterChat() {
+      goToStep(1);
+      if (!chatLog.children.length) {
+        appendMessage("assistant", "Hi, I am your AI coach. Ask me anything about learning, homework, or training decisions.");
+      }
+    }
+
+    startChatBtn.addEventListener("click", enterChat);
+    skipContextBtn.addEventListener("click", enterChat);
+    editContextBtn.addEventListener("click", () => goToStep(0));
+
+    /* ── Chat ── */
     function showTypingIndicator() {
       const item = document.createElement("div");
       item.className = "chat-message assistant";
@@ -174,62 +335,12 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       sendBtn.textContent = busy ? "Thinking..." : "Send";
     }
 
-    async function parseJsonSafe(response) {
-      const raw = await response.text();
-      if (!raw) return null;
-      try {
-        return JSON.parse(raw);
-      } catch {
-        return null;
-      }
-    }
-
-    async function extractPdfText(file) {
-      const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs");
-      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";
-
-      const buffer = await file.arrayBuffer();
-      const pdf = await pdfjs.getDocument({ data: buffer }).promise;
-      const chunks = [];
-
-      for (let pageIndex = 1; pageIndex <= Math.min(pdf.numPages, 35); pageIndex += 1) {
-        const page = await pdf.getPage(pageIndex);
-        const text = await page.getTextContent();
-        const line = text.items
-          .map((item) => ("str" in item ? item.str : ""))
-          .filter(Boolean)
-          .join(" ");
-        chunks.push(line);
-        if (chunks.join("\n").length > 24000) break;
-      }
-
-      return chunks.join("\n\n").trim();
-    }
-
-    async function extractImageText(file) {
-      try {
-        const Tesseract = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
-        const result = await Tesseract.recognize(file, "eng");
-        return String(result?.data?.text || "").trim();
-      } catch {
-        return "";
-      }
-    }
-
-    function syncContextMeta() {
-      const fromTextarea = String(contextInput.value || "").trim();
-      const merged = `${state.contextText}\n\n${fromTextarea}`.trim();
-      contextMeta.textContent = merged ? `Context ready (${merged.length} chars).` : "No extra context loaded.";
-      return merged.slice(0, 25000);
-    }
-
     async function postChat(payload) {
       const response = await fetch("/api/training/ai-coach-chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await parseJsonSafe(response);
       if (!response.ok) {
         const message = data?.error || `Request failed (${response.status}).`;
@@ -239,49 +350,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       return String(data.reply);
     }
 
-    pdfInput?.addEventListener("change", async () => {
-      const file = pdfInput.files?.[0];
-      if (!file) {
-        state.contextText = "";
-        syncContextMeta();
-        return;
-      }
-
-      contextMeta.textContent = "Reading PDF...";
-      const text = await extractPdfText(file);
-      if (!text) {
-        contextMeta.textContent = "PDF has no extractable text.";
-        return;
-      }
-      state.contextText = `PDF (${file.name}):\n${text}`;
-      syncContextMeta();
-    });
-
-    imageInput?.addEventListener("change", async () => {
-      const files = Array.from(imageInput.files || []);
-      if (files.length === 0) return;
-
-      contextMeta.textContent = "Running OCR on images...";
-      const chunks = [];
-      for (const file of files.slice(0, 4)) {
-        const text = await extractImageText(file);
-        if (text) chunks.push(`Image (${file.name}):\n${text}`);
-        else chunks.push(`Image (${file.name}): [No OCR text extracted. User should describe image manually.]`);
-      }
-
-      const merged = [state.contextText, ...chunks].filter(Boolean).join("\n\n");
-      state.contextText = merged.slice(0, 25000);
-      syncContextMeta();
-    });
-
-    contextInput?.addEventListener("input", () => {
-      syncContextMeta();
-    });
-
     chatForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (state.busy) return;
-
       const message = String(messageInput.value || "").trim();
       if (!message) return;
 
@@ -302,24 +373,18 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         state.history.push({ role: "assistant", content: reply });
       } catch (error) {
         removeTypingIndicator();
-        const message = error instanceof Error ? error.message : "Failed to get response.";
-        await appendMessage("assistant", `Error: ${message}`);
+        const msg = error instanceof Error ? error.message : "Failed to get response.";
+        await appendMessage("assistant", `Error: ${msg}`);
       } finally {
         setBusy(false);
       }
     });
 
-    // Allow Ctrl+Enter / Cmd+Enter to submit
     messageInput?.addEventListener("keydown", (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
         chatForm?.requestSubmit();
       }
     });
-
-    appendMessage(
-      "assistant",
-      "Hi, I am your AI coach. Upload context if needed, then ask me anything about learning, homework, or training decisions.",
-    );
   </script>
 </BaseLayout>
