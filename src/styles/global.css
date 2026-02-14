@@ -988,7 +988,6 @@ footer .footer-text {
   line-height: 1.55;
   font-size: 0.92rem;
   max-width: min(85%, 62ch);
-  overflow-x: auto;
 }
 
 .chat-message-content p {
@@ -1016,10 +1015,6 @@ footer .footer-text {
   font-size: 0.95rem;
 }
 
-/* MathJax inside chat – parent already scrolls if too wide */
-.chat-message-content mjx-container {
-  overflow: visible !important;
-}
 
 .chat-message-content ul,
 .chat-message-content ol {
