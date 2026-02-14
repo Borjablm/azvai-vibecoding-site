@@ -1018,21 +1018,15 @@ footer .footer-text {
 
 /* MathJax inside chat */
 .chat-message-content mjx-container {
-  overflow-x: auto;
   max-width: 100%;
-  display: inline-block;
-  font-size: inherit !important;
+  overflow: visible !important;
 }
 
 .chat-message-content mjx-container[display="true"] {
   display: block;
   margin: 0.5rem 0;
-  font-size: inherit !important;
-}
-
-.chat-message-content mjx-container svg {
-  max-width: 100%;
-  height: auto;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
 }
 
 .chat-message-content ul,
