@@ -1016,17 +1016,9 @@ footer .footer-text {
   font-size: 0.95rem;
 }
 
-/* MathJax inside chat */
+/* MathJax inside chat – parent already scrolls if too wide */
 .chat-message-content mjx-container {
-  max-width: 100%;
   overflow: visible !important;
-}
-
-.chat-message-content mjx-container[display="true"] {
-  display: block;
-  margin: 0.5rem 0;
-  overflow-x: auto !important;
-  overflow-y: visible !important;
 }
 
 .chat-message-content ul,
